@@ -1,0 +1,14 @@
+{
+  "name": "tap-derby",
+  "version": "1.0.0",
+  "description": "搖搖賽馬 Tap Derby：團隊聚餐用的多人手機賽馬遊戲",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js",
+    "sim": "node sim.js 39"
+  },
+  "engines": {
+    "node": ">=18"
+  },
+  "license": "MIT"
+}

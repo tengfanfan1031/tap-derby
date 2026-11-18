@@ -1,0 +1,245 @@
+<!doctype html>
+<html lang="zh-Hant">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no,viewport-fit=cover">
+<meta name="theme-color" content="#0a1712">
+<title>搖搖賽馬 Tap Derby</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@500;700;900&family=Oswald:wght@500;700&display=swap">
+<style>
+:root{
+  --night:#0a1712;--panel:#0f241b;--ink:#f1ecdc;--muted:#93ad9f;--line:rgba(241,236,220,.16);--gold:#e9b72f;
+  --display:"Oswald","Noto Sans TC",system-ui,sans-serif;
+  --body:"Noto Sans TC",system-ui,-apple-system,"PingFang TC","Microsoft JhengHei",sans-serif;
+  color-scheme:dark;
+}
+*{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+[hidden]{display:none!important}
+html,body{margin:0;height:100%}
+body{background:var(--night);color:var(--ink);font-family:var(--body);font-size:16px;line-height:1.5;
+  -webkit-user-select:none;user-select:none;-webkit-touch-callout:none;overscroll-behavior:none;touch-action:manipulation}
+.top{display:flex;justify-content:flex-end;padding:max(10px,env(safe-area-inset-top,0px)) max(14px,env(safe-area-inset-right,0px)) 0 max(14px,env(safe-area-inset-left,0px))}
+.lang{display:inline-flex;border:1px solid var(--line);border-radius:999px;overflow:hidden}
+.lang button{border:0;border-radius:0;padding:6px 14px;font-size:14px;font-weight:700;color:var(--muted)}
+.lang button[aria-pressed="true"]{background:var(--ink);color:#0a1712}
+.app{min-height:calc(100% - 50px);display:flex;flex-direction:column;gap:14px;text-align:center;
+  padding:12px max(18px,env(safe-area-inset-right,0px)) max(28px,env(safe-area-inset-bottom,0px)) max(18px,env(safe-area-inset-left,0px))}
+.title{font-family:var(--display);font-weight:700;font-size:32px;color:var(--gold);margin:0;line-height:1.2}
+.text{color:var(--muted);font-size:15px;margin:0}
+input{font:inherit;font-size:17px;width:100%;padding:14px;border-radius:12px;border:1px solid var(--line);background:var(--panel);color:var(--ink);text-align:center;-webkit-user-select:text;user-select:text}
+input:focus{outline:2px solid var(--gold);outline-offset:1px}
+.tables{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+button{font-family:var(--body);cursor:pointer;border-radius:14px;border:2px solid var(--line);background:transparent;color:var(--ink);padding:14px;font-weight:900;font-size:17px}
+button:focus-visible{outline:3px solid var(--gold);outline-offset:2px}
+.tables button{padding:22px 0;font-size:19px}
+.me{display:flex;align-items:center;justify-content:center;gap:10px;font-weight:900;font-size:19px}
+.silk{width:30px;height:30px;border-radius:7px;display:grid;place-items:center;font-family:var(--display);font-weight:700;color:#0a1712;font-size:17px}
+.big{font-family:var(--display);font-size:88px;font-weight:700;line-height:1.05;color:var(--gold)}
+.grow{flex:1;display:flex;flex-direction:column;justify-content:center;gap:12px}
+.tap{flex:1;min-height:300px;border:0;border-radius:28px;color:#0a1712;font-family:var(--display);font-size:68px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:4px;touch-action:none;transition:transform .05s}
+.tap small{font-family:var(--body);font-size:16px;font-weight:700;opacity:.8}
+.tap.hit{transform:scale(.96)}
+.tap:disabled{opacity:.5}
+.stats{display:flex;justify-content:space-between;align-items:baseline;font-variant-numeric:tabular-nums;gap:8px}
+.stats b{font-family:var(--display);font-size:28px}
+.bar{height:12px;border-radius:6px;background:var(--line);overflow:hidden}
+.bar i{display:block;height:100%;width:0;transition:width .1s linear}
+.status{position:fixed;left:0;right:0;bottom:max(6px,env(safe-area-inset-bottom,0px));text-align:center;pointer-events:none;font-size:13px;color:#ffb4a8}
+.ghost{border-color:var(--line);color:var(--muted);font-weight:700;font-size:15px;padding:10px}
+.err{color:#ffb4a8;font-size:14px;min-height:1.2em;margin:0}
+.mvp{color:var(--gold);font-weight:900}
+</style>
+</head>
+<body>
+<div class="top"><div class="lang" role="group" aria-label="Language"><button data-lang="zh">中文</button><button data-lang="en">English</button></div></div>
+<main class="app" id="app"><p class="title">搖搖賽馬 · Tap Derby</p><p class="text">連線中… Connecting…</p></main>
+<div class="status" id="status"></div>
+
+<script>
+(function(){
+  const I18N={
+    zh:{
+      title:'搖搖賽馬',table:i=>`第 ${i+1} 枱`,
+      joinIntro:'輸入你的名字（可以唔填），<br>再揀你坐緊嗰張枱。',namePh:'你的名字或花名',
+      joinedCount:n=>`已有 ${n} 人加入`,ready:'準備',
+      waitText:'等主持人開始比賽。<br>開跑之後，用手指狂按個大掣！<br>可以用兩隻手指輪流按。',
+      totalNow:n=>`全場已有 <b id="tot">${n}</b> 人`,change:'轉枱',
+      countText:'準備好手指！',go:'開跑！',tap:'按！',tapSub:'愈快愈好',
+      myTaps:n=>`你按咗 <b id="myTaps">${n}</b> 下`,crossed:'已衝線！',nowPlace:k=>`暫時第 ${k}`,
+      place:['冠軍','亞軍','季軍','第四','第五','第六','第七','第八'],finished:'完場',
+      tableTime:t=>`你張枱用咗 ${t} 秒衝線`,tableDnf:'你張枱未到終點',youTapped:n=>`你一個人按咗 ${n} 下`,
+      mvp:k=>`你係全場第 ${k} 快手指！`,winMsg:'恭喜！快啲同枱友擊掌！',nextMsg:'等主持人開下一場，再嚟過！',
+      errBusy:'比賽進行中，完場後先可以轉枱',errNet:'連線失敗，請再試一次',reconnect:'連線不穩，重新連線中…',
+    },
+    en:{
+      title:'Tap Derby',table:i=>`Table ${i+1}`,
+      joinIntro:'Enter your name (optional),<br>then pick the table you\'re sitting at.',namePh:'Your name or nickname',
+      joinedCount:n=>`${n} ${n===1?'player has':'players have'} joined`,ready:'Ready',
+      waitText:'Waiting for the host to start.<br>When the race begins, tap the big button as fast as you can!<br>Try alternating two fingers.',
+      totalNow:n=>`<b id="tot">${n}</b> players in the room`,change:'Change table',
+      countText:'Fingers ready!',go:'GO!',tap:'TAP!',tapSub:'Faster is better',
+      myTaps:n=>`You tapped <b id="myTaps">${n}</b> times`,crossed:'Finished!',nowPlace:k=>`Now ${['1st','2nd','3rd'][k-1]||k+'th'}`,
+      place:['1st','2nd','3rd','4th','5th','6th','7th','8th'],finished:'Done',
+      tableTime:t=>`Your table finished in ${t}s`,tableDnf:'Your table did not finish',youTapped:n=>`You tapped ${n} times`,
+      mvp:k=>`You\'re #${k} fastest fingers in the room!`,winMsg:'Congratulations! High-five your table!',nextMsg:'Wait for the next race and try again!',
+      errBusy:'A race is running. You can change tables after it ends.',errNet:'Connection failed. Please try again.',reconnect:'Connection unstable. Reconnecting…',
+    },
+  };
+  const COLORS=['#e5484d','#f0c53c','#3d8df5','#c46cf0','#2fbf71','#ff8a3d','#4dd0e1','#f06292'];
+  const app=document.getElementById('app'), statusEl=document.getElementById('status');
+  const store={get(k){try{return localStorage.getItem(k)}catch(e){return null}},set(k,v){try{localStorage.setItem(k,v)}catch(e){}}};
+  let lang=new URLSearchParams(location.search).get('lang')||store.get('derby-lang')||(/^zh/i.test(navigator.language)?'zh':'en');
+  if(!I18N[lang]) lang='zh';
+  const L=()=>I18N[lang];
+
+  let id=store.get('derby-id');
+  if(!id||!/^[a-zA-Z0-9_-]{6,40}$/.test(id)){ id='p'+Math.random().toString(36).slice(2,12)+Date.now().toString(36); store.set('derby-id',id); }
+  let myTable=store.get('derby-table'); myTable=myTable==null?null:Number(myTable);
+  let myName=store.get('derby-name')||'';
+  let state=null, view='', pending=0, localTaps=0, raceNo=null, joined=false, joinErrorKey='', offline=false;
+
+  const esc=s=>String(s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+  const tname=i=>(state&&state.tables[i]&&state.tables[i].name)||L().table(i);
+
+  function applyLang(){
+    document.documentElement.lang=lang==='zh'?'zh-Hant':'en';
+    document.title=L().title;
+    document.querySelectorAll('[data-lang]').forEach(b=>b.setAttribute('aria-pressed',String(b.dataset.lang===lang)));
+    statusEl.textContent=offline?L().reconnect:'';
+    view=''; render();
+  }
+  document.querySelectorAll('[data-lang]').forEach(b=>b.addEventListener('click',()=>{lang=b.dataset.lang;store.set('derby-lang',lang);applyLang();}));
+
+  async function post(url,body){
+    const r=await fetch(url,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(body),keepalive:true});
+    if(!r.ok){ const e=new Error('http'); e.status=r.status; throw e; }
+    return r.json().catch(()=>({}));
+  }
+  async function join(table){
+    try{
+      await post('/join',{id,table,name:myName});
+      myTable=table; joined=true; joinErrorKey='';
+      store.set('derby-table',String(table));
+    }catch(e){ joinErrorKey=e.status===409?'errBusy':'errNet'; }
+    view=''; render();
+  }
+
+  // 每 150 毫秒把累積的點擊送去伺服器
+  setInterval(()=>{
+    if(!joined||pending===0) return;
+    const n=pending; pending=0;
+    post('/tap',{id,n}).catch(()=>{ pending+=n; });
+  },150);
+  // 閒置時每 4 秒報到一次
+  setInterval(()=>{ if(joined&&pending===0) post('/tap',{id,n:0}).catch(()=>{}); },4000);
+
+  function hit(e){
+    e.preventDefault();
+    if(!state||state.phase!=='race') return;
+    const t=state.tables[myTable]; if(!t||t.finish!=null) return;
+    pending++; localTaps++;
+    if(navigator.vibrate) try{navigator.vibrate(8)}catch(_){}
+    const b=e.currentTarget; b.classList.remove('hit'); void b.offsetWidth; b.classList.add('hit');
+    const c=document.getElementById('myTaps'); if(c) c.textContent=localTaps;
+  }
+
+  const meHtml=()=>`<div class="me"><span class="silk" style="background:${COLORS[myTable]}">${myTable+1}</span>${esc(tname(myTable))}</div>`;
+
+  function render(){
+    if(!state) return;
+    const s=state;
+    if(raceNo!==s.no) raceNo=s.no;
+    if(s.phase==='count') localTaps=0;
+
+    const v=(myTable==null||!joined)?'join':s.phase;
+    const key=[v,myTable,v==='count'?s.countdown:'',v==='done'?s.no:'',joinErrorKey].join('|');
+    if(key===view){ live(); return; }
+    view=key;
+
+    if(v==='join'){
+      app.innerHTML=`<p class="title">${L().title}</p>
+        <p class="text">${L().joinIntro}</p>
+        <input id="name" maxlength="12" autocomplete="off">
+        <div class="tables">${s.tables.map((t,i)=>`<button data-t="${i}" style="border-color:${COLORS[i]};color:${COLORS[i]}">${esc(tname(i))}</button>`).join('')}</div>
+        <p class="err">${joinErrorKey?L()[joinErrorKey]:''}</p>
+        <p class="text">${L().joinedCount(s.total)}</p>`;
+      const nameEl=document.getElementById('name');
+      nameEl.placeholder=L().namePh; nameEl.value=myName;
+      nameEl.addEventListener('input',()=>{myName=nameEl.value.trim().slice(0,12);store.set('derby-name',myName);});
+      app.querySelectorAll('[data-t]').forEach(b=>b.addEventListener('click',()=>join(+b.dataset.t)));
+      return;
+    }
+    if(v==='idle'){
+      app.innerHTML=`${meHtml()}<div class="grow"><div class="big">${L().ready}</div><p class="text">${L().waitText}</p></div>
+        <p class="text">${L().totalNow(s.total)}</p>
+        <button class="ghost" id="change">${L().change}</button>`;
+      document.getElementById('change').addEventListener('click',()=>{joined=false;joinErrorKey='';view='';render();});
+      return;
+    }
+    if(v==='count'){
+      app.innerHTML=`${meHtml()}<div class="grow"><div class="big">${s.countdown||L().go}</div><p class="text">${L().countText}</p></div>`;
+      return;
+    }
+    if(v==='race'){
+      const c=COLORS[myTable];
+      app.innerHTML=`${meHtml()}
+        <button class="tap" id="tapBtn" style="background:${c}">${L().tap}<small>${L().tapSub}</small></button>
+        <div class="stats"><span>${L().myTaps(localTaps)}</span><span id="place"></span></div>
+        <div class="bar"><i id="bar" style="background:${c}"></i></div>`;
+      const b=document.getElementById('tapBtn');
+      b.addEventListener('pointerdown',hit);
+      b.addEventListener('contextmenu',e=>e.preventDefault());
+      live(); return;
+    }
+    if(v==='done'){
+      const k=s.ranking?s.ranking.indexOf(myTable):-1;
+      const t=s.tables[myTable];
+      const mvp=s.me&&s.me.mvp!=null?s.me.mvp:-1;
+      app.innerHTML=`${meHtml()}<div class="grow">
+        <div class="big">${k>=0?L().place[k]:L().finished}</div>
+        <p class="text">${t&&t.finish!=null?L().tableTime(t.finish.toFixed(2)):L().tableDnf}<br>${L().youTapped(s.me?s.me.taps:localTaps)}</p>
+        ${mvp>=0?`<p class="text mvp">${L().mvp(mvp+1)}</p>`:''}
+        <p class="text">${k===0?L().winMsg:L().nextMsg}</p></div>`;
+    }
+  }
+
+  function live(){
+    if(!state) return;
+    const tot=document.getElementById('tot'); if(tot) tot.textContent=state.total;
+    const t=state.tables[myTable];
+    const bar=document.getElementById('bar'); if(bar&&t) bar.style.width=t.prog+'%';
+    const pl=document.getElementById('place');
+    if(pl&&t&&state.phase==='race'){
+      const ahead=state.tables.filter(x=>x!==t&&(x.players>0||x.prog>0)&&(
+        (x.finish!=null&&(t.finish==null||x.finish<t.finish))||(x.finish==null&&t.finish==null&&x.prog>t.prog))).length;
+      pl.textContent=t.finish!=null?L().crossed:L().nowPlace(ahead+1);
+      const btn=document.getElementById('tapBtn'); if(btn&&t.finish!=null) btn.disabled=true;
+    }
+  }
+
+  // 定時向伺服器拎最新狀態：比賽時每 0.15 秒，其他時間每 0.8 秒
+  let fails=0, first=true;
+  async function poll(){
+    try{
+      const r=await fetch('/state?id='+encodeURIComponent(id),{cache:'no-store'});
+      if(!r.ok) throw new Error('http');
+      state=await r.json();
+      fails=0;
+      if(offline){ offline=false; statusEl.textContent=''; }
+      if(first){ first=false; if(myTable!=null&&!joined&&!joinErrorKey) join(myTable); }
+      render();
+    }catch(e){
+      if(++fails>=3){ offline=true; statusEl.textContent=L().reconnect; }
+    }
+    const fast=state&&(state.phase==='race'||state.phase==='count');
+    setTimeout(poll,fast?150:800);
+  }
+  function connect(){ poll(); }
+  applyLang();
+  connect();
+})();
+</script>
+</body>
+</html>

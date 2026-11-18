@@ -1,0 +1,350 @@
+<!doctype html>
+<html lang="zh-Hant">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>搖搖賽馬 Tap Derby</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@400;500;700;900&family=Oswald:wght@500;700&display=swap">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+<style>
+/* 投影用大螢幕：左邊跑道，右邊 QR Code 與人數。夜間馬場配色。 */
+:root{
+  --night:#0a1712;--panel:#0f241b;--turf:#14432e;--turf-2:#103a27;--rail:#f1ecdc;--ink:#f1ecdc;
+  --muted:#93ad9f;--line:rgba(241,236,220,.14);--gold:#e9b72f;
+  --display:"Oswald","Noto Sans TC",system-ui,sans-serif;
+  --body:"Noto Sans TC",system-ui,-apple-system,"PingFang TC","Microsoft JhengHei",sans-serif;
+  color-scheme:dark;
+}
+*{box-sizing:border-box}
+[hidden]{display:none!important}
+html,body{margin:0;min-height:100%}
+body{background:var(--night);color:var(--ink);font-family:var(--body);font-size:16px;line-height:1.5;padding:20px max(20px,env(safe-area-inset-left,0px))}
+.wrap{max-width:1600px;margin:0 auto;display:grid;grid-template-columns:minmax(0,1fr) 300px;gap:24px;align-items:start}
+@media (max-width:1000px){.wrap{grid-template-columns:minmax(0,1fr)}}
+.main{display:flex;flex-direction:column;gap:16px;min-width:0}
+.head{display:flex;justify-content:space-between;align-items:flex-end;gap:16px;flex-wrap:wrap}
+h1{font-family:var(--display);font-weight:700;font-size:clamp(32px,4vw,56px);line-height:1;margin:0}
+.sub{color:var(--muted);font-size:15px;margin-top:6px}
+.meta{display:flex;gap:12px;align-items:center;flex-wrap:wrap}
+.chip{font-size:15px;padding:6px 14px;border-radius:999px;border:1px solid var(--line);color:var(--muted)}
+.chip[data-phase="race"]{color:#0a1712;background:var(--gold);border-color:var(--gold);font-weight:700}
+.chip[data-phase="done"]{color:var(--ink);border-color:var(--ink)}
+.clock{font-family:var(--display);font-size:32px;font-variant-numeric:tabular-nums;min-width:6ch;text-align:right}
+.lang{display:inline-flex;border:1px solid var(--line);border-radius:999px;overflow:hidden}
+.lang button{border:0;border-radius:0;padding:6px 12px;font-size:14px;color:var(--muted)}
+.lang button[aria-pressed="true"]{background:var(--ink);color:#0a1712}
+
+.board{background:var(--panel);border:1px solid var(--line);border-radius:16px;padding:18px;display:flex;flex-direction:column;gap:14px;position:relative;overflow:hidden}
+.track{display:flex;flex-direction:column;background:repeating-linear-gradient(90deg,var(--turf) 0 70px,var(--turf-2) 70px 140px);border-radius:10px;padding:8px 0;border-top:4px solid var(--rail);border-bottom:4px solid var(--rail)}
+.lane{display:grid;grid-template-columns:170px minmax(0,1fr);align-items:center;min-height:clamp(64px,10vh,96px);border-bottom:1px dashed rgba(241,236,220,.2)}
+.lane:last-child{border-bottom:0}
+.lane.empty{opacity:.4}
+.lane-label{display:flex;align-items:center;gap:10px;padding-left:12px;min-width:0}
+.silk{width:36px;height:36px;border-radius:8px;display:grid;place-items:center;font-family:var(--display);font-weight:700;color:#0a1712;font-size:20px;flex:none}
+.lane-name{font-weight:900;font-size:18px;line-height:1.2}
+.lane-sub{font-size:13px;color:var(--muted);font-variant-numeric:tabular-nums}
+.run{position:relative;height:100%;min-height:60px;margin-right:16px}
+.finish{position:absolute;top:-8px;bottom:-8px;right:0;width:12px;background:repeating-linear-gradient(0deg,var(--rail) 0 9px,#0a1712 9px 18px)}
+.horse{position:absolute;top:50%;left:0;width:64px;height:64px;margin-top:-32px;font-size:50px;line-height:64px;text-align:center;will-change:transform;transition:transform .1s linear}
+.horse span{display:inline-block;transform:scaleX(-1)}
+.racing .horse span{animation:bob .3s ease-in-out infinite alternate}
+@keyframes bob{from{transform:scaleX(-1) translateY(0) rotate(0)}to{transform:scaleX(-1) translateY(-6px) rotate(-4deg)}}
+.trail{position:absolute;top:50%;left:0;height:5px;margin-top:-2.5px;border-radius:3px;opacity:.55;transition:width .1s linear}
+.place-tag{position:absolute;top:4px;right:22px;font-family:var(--display);font-size:16px;font-weight:700;padding:2px 10px;border-radius:4px;background:var(--rail);color:#0a1712}
+
+.overlay{position:absolute;inset:0;display:grid;place-items:center;background:rgba(10,23,18,.75);font-family:var(--display);font-weight:700;font-size:clamp(90px,16vw,220px);color:var(--gold);pointer-events:none;text-align:center}
+.call{display:flex;gap:14px;align-items:baseline;border-top:1px solid var(--line);padding-top:12px;min-height:52px}
+.call-label{font-size:13px;letter-spacing:.12em;color:var(--gold);flex:none;text-transform:uppercase}
+.call-text{font-size:clamp(20px,2.6vw,30px);font-weight:900;min-width:0}
+
+.controls{display:flex;gap:10px;flex-wrap:wrap;align-items:center}
+button{font-family:var(--body);font-size:16px;cursor:pointer;border-radius:10px;border:1px solid var(--line);background:transparent;color:var(--ink);padding:12px 20px;font-weight:700}
+button:focus-visible{outline:3px solid var(--gold);outline-offset:2px}
+button:disabled{opacity:.4;cursor:not-allowed}
+.btn-go{background:var(--gold);border-color:var(--gold);color:#0a1712}
+.hint{color:var(--muted);font-size:14px}
+.warn{color:#ffb4a8;font-size:14px}
+
+.results{display:grid;grid-template-columns:repeat(auto-fit,minmax(170px,1fr));gap:12px}
+.res{border:1px solid var(--line);border-radius:12px;padding:14px;display:flex;flex-direction:column;gap:4px}
+.res.first{border-color:var(--gold);background:rgba(233,183,47,.08)}
+.res-rank{font-family:var(--display);font-size:34px;font-weight:700;line-height:1}
+.res.first .res-rank{color:var(--gold)}
+.res-name{font-weight:900;font-size:18px}
+.res-time{font-size:14px;color:var(--muted);font-variant-numeric:tabular-nums}
+.mvp{background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:14px 16px}
+.mvp h2{font-size:15px;letter-spacing:.1em;color:var(--gold);margin:0 0 8px;font-weight:700}
+.mvp ol{margin:0;padding-left:22px;display:grid;gap:4px;font-size:18px}
+.mvp .n{font-family:var(--display);font-variant-numeric:tabular-nums;color:var(--muted);margin-left:8px}
+
+.side{background:var(--panel);border:1px solid var(--line);border-radius:16px;padding:20px;display:flex;flex-direction:column;gap:12px;align-items:center;text-align:center;position:sticky;top:20px}
+.side h2{margin:0;font-size:22px;font-weight:900}
+.qr{background:#fff;padding:12px;border-radius:12px;width:100%;max-width:260px;aspect-ratio:1}
+.qr img,.qr canvas{width:100%!important;height:auto!important;display:block}
+.url{font-family:var(--display);font-size:15px;word-break:break-all;color:var(--muted)}
+.big-n{font-family:var(--display);font-size:64px;font-weight:700;line-height:1;color:var(--gold);font-variant-numeric:tabular-nums}
+.conn{font-size:13px;color:var(--muted)}
+.conn.bad{color:#ffb4a8}
+@media (prefers-reduced-motion:reduce){.racing .horse span{animation:none}}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <section class="main">
+    <div class="head">
+      <div>
+        <h1 data-i18n="title"></h1>
+        <div class="sub" id="raceName"></div>
+      </div>
+      <div class="meta">
+        <div class="lang" role="group" aria-label="Language">
+          <button data-lang="zh">中文</button><button data-lang="en">English</button>
+        </div>
+        <span class="chip" id="phaseChip" data-phase="idle"></span>
+        <span class="clock" id="clock"></span>
+      </div>
+    </div>
+
+    <div class="board" id="board">
+      <div class="track" id="track"></div>
+      <div class="call"><span class="call-label" data-i18n="callLabel"></span><span class="call-text" id="call"></span></div>
+      <div class="overlay" id="overlay" hidden></div>
+    </div>
+
+    <div class="controls">
+      <button class="btn-go" id="startBtn"></button>
+      <button id="stopBtn" hidden data-i18n="stop"></button>
+      <button id="resetBtn" data-i18n="reset"></button>
+      <button id="fsBtn" data-i18n="fullscreen"></button>
+      <span class="hint" id="hint"></span>
+    </div>
+
+    <div class="results" id="results" hidden></div>
+    <div class="mvp" id="mvp" hidden><h2 data-i18n="mvpTitle"></h2><ol id="mvpList"></ol></div>
+  </section>
+
+  <aside class="side">
+    <h2 data-i18n="scan"></h2>
+    <div class="qr" id="qr"></div>
+    <div class="url" id="joinUrl"></div>
+    <div class="big-n" id="total">0</div>
+    <div class="hint" data-i18n="joined"></div>
+    <div class="warn" id="lhWarn" hidden data-i18n="localhostWarn"></div>
+    <div class="conn" id="conn"></div>
+  </aside>
+</div>
+
+<script>
+(function(){
+  const I18N={
+    zh:{
+      title:'搖搖賽馬',raceName:n=>`第 ${n} 場 · 尾牙盃`,callLabel:'現場評述',
+      phase:{idle:'等待開跑',count:'準備',race:'比賽中',done:'完場'},sec:'秒',
+      start:'開始比賽',again:'再跑一場',stop:'提早完場',reset:'重設',fullscreen:'全螢幕',
+      hintIdle:'按「開始比賽」後會倒數 3 秒。',hintNoKey:'網址缺少主持人密碼（?key=…），只能觀看，不能開始比賽。',hintOffline:'連唔到伺服器，請檢查電腦上的伺服器視窗。',
+      scan:'掃描加入比賽',joined:'人已加入',localhostWarn:'你正在用 localhost 開啟這頁，手機掃描後會連不上。請改用伺服器視窗顯示的 IP 網址或通道網址開啟。',
+      qrFail:'QR Code 載入失敗，請直接輸入上面的網址',connOk:'伺服器已連線',connBad:'與伺服器斷線，重新連線中…',
+      table:i=>`第 ${i+1} 枱`,players:n=>`${n} 人`,rate:(n,r)=>`${n} 人 · 每人 ${r} 下/秒`,
+      place:['冠軍','亞軍','季軍','第四','第五','第六','第七','第八'],go:'開跑！',
+      time:(t,d)=>`${t} 秒${d?` · 慢 ${d} 秒`:''}`,dnf:p=>`未到終點 · 跑咗 ${p}%`,
+      mvpTitle:'全場最快手指',anon:'無名英雄',taps:n=>`${n} 下`,
+      say:{
+        idle:'各位同事，請掃 QR Code 揀返自己張枱！',count:'準備……大家拎起手機！',go:'閘門打開！一齊衝出！',
+        win:a=>`${a}衝線！恭喜奪得冠軍！`,done:a=>`完場！冠軍係${a}，請派代表上台領獎！`,
+        early:(a,b)=>[`${a}起步最快，${b}緊貼其後！`,'鬥得好激烈，大家用力按呀！'],
+        close:(a,b)=>[`${a}同${b}頭馬頸位，差距不到半個馬位！`,`${b}追緊上嚟喇！`],
+        lead:(a,g,z)=>[`${a}拋離對手，領先 ${g} 個身位！`,`${z}仲有機會，唔好放棄！`],
+        straightClose:(a,b)=>`入直路喇！${a}同${b}鬥到最後！`,straight:a=>`入直路喇！${a}一馬當先！`,
+      },
+    },
+    en:{
+      title:'Tap Derby',raceName:n=>`Race ${n} · Year-End Cup`,callLabel:'Live call',
+      phase:{idle:'Waiting',count:'Get ready',race:'Racing',done:'Finished'},sec:'s',
+      start:'Start race',again:'Run again',stop:'End race now',reset:'Reset',fullscreen:'Full screen',
+      hintIdle:'The race starts after a 3-second countdown.',hintNoKey:'The host key (?key=…) is missing from this address, so you can watch but not start a race.',hintOffline:'Cannot reach the server. Check the server window on the computer.',
+      scan:'Scan to join',joined:'players joined',localhostWarn:'This page is open on localhost, so phones cannot connect from the QR code. Open it with the IP address or tunnel address shown in the server window.',
+      qrFail:'QR code failed to load. Type the address above instead.',connOk:'Connected to server',connBad:'Lost connection. Reconnecting…',
+      table:i=>`Table ${i+1}`,players:n=>`${n} ${n===1?'player':'players'}`,rate:(n,r)=>`${n} players · ${r} taps/s each`,
+      place:['1st','2nd','3rd','4th','5th','6th','7th','8th'],go:'GO!',
+      time:(t,d)=>`${t}s${d?` · +${d}s`:''}`,dnf:p=>`Did not finish · ${p}%`,
+      mvpTitle:'Fastest fingers',anon:'Mystery tapper',taps:n=>`${n} taps`,
+      say:{
+        idle:'Scan the QR code and pick your table!',count:'Get ready… phones in hand!',go:'And they\'re off!',
+        win:a=>`${a} crosses the line! ${a} wins!`,done:a=>`That\'s the race! ${a} takes the cup. Send someone up to collect the prize!`,
+        early:(a,b)=>[`${a} gets the best start, ${b} right behind!`,'What a battle. Keep tapping!'],
+        close:(a,b)=>[`${a} and ${b} neck and neck!`,`${b} is closing in!`],
+        lead:(a,g,z)=>[`${a} pulls away, ${g} lengths clear!`,`${z} is still in this. Don\'t give up!`],
+        straightClose:(a,b)=>`Into the home straight! ${a} and ${b} fighting to the line!`,straight:a=>`Into the home straight! ${a} out in front!`,
+      },
+    },
+  };
+  const COLORS=['#e5484d','#f0c53c','#3d8df5','#c46cf0','#2fbf71','#ff8a3d','#4dd0e1','#f06292'];
+  const $=id=>document.getElementById(id);
+  const store={get(k){try{return localStorage.getItem(k)}catch(e){return null}},set(k,v){try{localStorage.setItem(k,v)}catch(e){}}};
+  const params=new URLSearchParams(location.search);
+  let lang=params.get('lang')||store.get('derby-lang')||(/^zh/i.test(navigator.language)?'zh':'en');
+  if(!I18N[lang]) lang='zh';
+  const L=()=>I18N[lang];
+  const KEY=params.get('key')||'';
+  const joinUrl=params.get('join')||(location.origin+'/');
+
+  let lanes=[], state=null, lastCallAt=0, lastPhase='', lastCountdown=-1, announced=false, hintKey=KEY?'hintIdle':'hintNoKey', callFn=()=>L().say.idle, connOk=null;
+  const tname=(s,i)=>s.tables[i].name||L().table(i);
+
+  function say(fn){ callFn=fn; $('call').textContent=fn(); }
+
+  function applyLang(){
+    document.documentElement.lang=lang==='zh'?'zh-Hant':'en';
+    document.title=lang==='zh'?'搖搖賽馬 · 大螢幕':'Tap Derby · Big screen';
+    document.querySelectorAll('[data-i18n]').forEach(el=>{el.textContent=L()[el.dataset.i18n];});
+    document.querySelectorAll('[data-lang]').forEach(b=>b.setAttribute('aria-pressed',String(b.dataset.lang===lang)));
+    if(hintKey) $('hint').textContent=L()[hintKey];
+    $('call').textContent=callFn();
+    if(connOk!=null) $('conn').textContent=connOk?L().connOk:L().connBad;
+    if($('qr').dataset.failed) $('qr').textContent=L().qrFail;
+    lastPhase=lastPhase==='done'?'done-relang':lastPhase;
+    if(state) render(state,true);
+  }
+  document.querySelectorAll('[data-lang]').forEach(b=>b.addEventListener('click',()=>{lang=b.dataset.lang;store.set('derby-lang',lang);applyLang();}));
+
+  // QR Code
+  $('joinUrl').textContent=joinUrl;
+  try{ new QRCode($('qr'),{text:joinUrl,width:512,height:512,correctLevel:QRCode.CorrectLevel.M}); }
+  catch(e){ $('qr').dataset.failed='1'; $('qr').style.cssText+='display:grid;place-items:center;color:#0a1712;font-size:14px'; }
+  if(/^(localhost|127\.0\.0\.1|\[::1\])$/.test(location.hostname)&&!params.get('join')) $('lhWarn').hidden=false;
+  if(!KEY){ $('startBtn').disabled=true; $('resetBtn').disabled=true; }
+
+  function buildLanes(tables){
+    const track=$('track'); track.innerHTML='';
+    lanes=tables.map((t,i)=>{
+      const lane=document.createElement('div');lane.className='lane';
+      lane.innerHTML=`<div class="lane-label"><span class="silk" style="background:${COLORS[i]}">${i+1}</span>
+        <div><div class="lane-name"></div><div class="lane-sub"></div></div></div>
+        <div class="run"><div class="trail" style="background:${COLORS[i]}"></div><div class="horse"><span>🏇</span></div><div class="finish"></div></div>`;
+      track.appendChild(lane);
+      return {lane,run:lane.querySelector('.run'),horse:lane.querySelector('.horse'),trail:lane.querySelector('.trail'),sub:lane.querySelector('.lane-sub'),name:lane.querySelector('.lane-name')};
+    });
+  }
+  function placeOf(tables,i){return tables.filter(t=>t.finish!=null&&t.finish<tables[i].finish).length}
+
+  function commentary(s){
+    const t=s.elapsed; if(t-lastCallAt<2.6) return; lastCallAt=t;
+    const T=s.tables, alive=T.map((x,i)=>i).filter(i=>T[i].players>0&&T[i].finish==null).sort((a,b)=>T[b].prog-T[a].prog);
+    if(alive.length<2) return;
+    const a=alive[0],b=alive[1],z=alive[alive.length-1],gap=T[a].prog-T[b].prog,lead=T[a].prog;
+    const pick=Math.random();
+    const choose=arr=>arr[Math.floor(pick*arr.length)];
+    if(lead<25) say(()=>choose(L().say.early(tname(s,a),tname(s,b))));
+    else if(lead<70){
+      if(gap<3) say(()=>choose(L().say.close(tname(s,a),tname(s,b))));
+      else { const g=gap.toFixed(0); say(()=>choose(L().say.lead(tname(s,a),g,tname(s,z)))); }
+    } else say(()=>gap<3?L().say.straightClose(tname(s,a),tname(s,b)):L().say.straight(tname(s,a)));
+  }
+
+  function render(s,force){
+    if(!lanes.length||lanes.length!==s.tables.length) buildLanes(s.tables);
+    state=s;
+    $('raceName').textContent=L().raceName(s.no);
+    $('total').textContent=s.total;
+    const chip=$('phaseChip'); chip.dataset.phase=s.phase; chip.textContent=L().phase[s.phase];
+    $('clock').textContent=s.elapsed.toFixed(1)+' '+L().sec;
+    $('board').classList.toggle('racing',s.phase==='race');
+    $('startBtn').textContent=s.phase==='done'?L().again:L().start;
+    if(KEY){ $('startBtn').disabled=s.phase==='count'||s.phase==='race'; $('stopBtn').hidden=s.phase!=='race'; }
+
+    s.tables.forEach((t,i)=>{
+      const l=lanes[i];
+      l.name.textContent=tname(s,i);
+      l.lane.classList.toggle('empty',t.players===0&&t.prog===0);
+      const w=l.run.clientWidth-64-14;
+      const x=Math.max(0,Math.min(1,t.prog/100))*w;
+      l.horse.style.transform=`translateX(${x}px)`;
+      l.trail.style.width=(x+24)+'px';
+      l.sub.textContent=(s.phase==='race'||s.phase==='done')&&t.players>0?L().rate(t.players,t.rate.toFixed(1)):L().players(t.players);
+      let tag=l.run.querySelector('.place-tag');
+      if(t.finish!=null){ if(!tag){tag=document.createElement('span');tag.className='place-tag';l.run.appendChild(tag);} tag.textContent=L().place[placeOf(s.tables,i)]; }
+      else if(tag) tag.remove();
+    });
+
+    const ov=$('overlay');
+    if(s.phase==='count'){ ov.hidden=false; if(s.countdown!==lastCountdown||force){ov.textContent=s.countdown||L().go;lastCountdown=s.countdown;} }
+    else if(s.phase==='race'&&lastPhase==='count'){ ov.textContent=L().go; setTimeout(()=>{ov.hidden=true},700); }
+    else if(s.phase!=='race') ov.hidden=true;
+
+    if(s.phase!==lastPhase&&!lastPhase.startsWith(s.phase)){
+      if(s.phase==='idle'){ say(()=>L().say.idle); announced=false; }
+      if(s.phase==='count'){ say(()=>L().say.count); announced=false; }
+      if(s.phase==='race'){ say(()=>L().say.go); lastCallAt=0; }
+    }
+    if(s.phase==='race'){
+      const firstIdx=s.tables.findIndex((t,i)=>t.finish!=null&&placeOf(s.tables,i)===0);
+      if(firstIdx>=0&&!announced){ say(()=>L().say.win(tname(s,firstIdx))); announced=true; }
+      else if(firstIdx<0) commentary(s);
+    }
+
+    const res=$('results'),mvp=$('mvp');
+    if(s.phase==='done'&&s.ranking){
+      if(lastPhase!=='done'){
+        const r=s.ranking, T=s.tables, first=T[r[0]];
+        res.innerHTML=r.map((i,k)=>`<div class="res${k===0?' first':''}"><span class="res-rank">${L().place[k]}</span><span class="res-name" style="color:${COLORS[i]}"></span><span class="res-time"></span></div>`).join('');
+        res.querySelectorAll('.res').forEach((el,k)=>{
+          const i=r[k],t=T[i];
+          el.querySelector('.res-name').textContent=tname(s,i);
+          el.querySelector('.res-time').textContent=t.finish!=null
+            ? L().time(t.finish.toFixed(2),k>0&&first.finish!=null?(t.finish-first.finish).toFixed(2):'')
+            : L().dnf(t.prog.toFixed(0));
+        });
+        res.hidden=false;
+        const list=$('mvpList'); list.innerHTML='';
+        (s.top||[]).forEach(p=>{
+          const li=document.createElement('li');
+          li.textContent=`${p.name||L().anon}（${T[p.table]?tname(s,p.table):''}）`;
+          const n=document.createElement('span');n.className='n';n.textContent=L().taps(p.taps);li.appendChild(n);list.appendChild(li);
+        });
+        mvp.hidden=!(s.top&&s.top.length);
+        if(r.length&&lastPhase!=='done-relang') say(()=>L().say.done(tname(s,r[0])));
+      }
+    } else { res.hidden=true; mvp.hidden=true; }
+    lastPhase=s.phase;
+  }
+
+  // 定時向伺服器拎最新狀態：比賽時每 0.1 秒，其他時間每 0.5 秒
+  let fails=0;
+  async function poll(){
+    try{
+      const r=await fetch('/state',{cache:'no-store'});
+      if(!r.ok) throw new Error('http');
+      const s=await r.json();
+      fails=0;
+      if(connOk!==true){connOk=true;$('conn').textContent=L().connOk;$('conn').classList.remove('bad');}
+      render(s);
+    }catch(e){
+      if(++fails>=3&&connOk!==false){connOk=false;$('conn').textContent=L().connBad;$('conn').classList.add('bad');}
+    }
+    const fast=state&&(state.phase==='race'||state.phase==='count');
+    setTimeout(poll,fast?100:500);
+  }
+  function connect(){ poll(); }
+
+  async function admin(action){
+    try{
+      const r=await fetch('/admin',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({key:KEY,action})});
+      const j=await r.json().catch(()=>({}));
+      if(!r.ok){ hintKey=null; $('hint').textContent=j.error||'Error'; }
+      else { hintKey='hintIdle'; $('hint').textContent=L().hintIdle; }
+    }catch(e){ hintKey='hintOffline'; $('hint').textContent=L().hintOffline; }
+  }
+  $('startBtn').addEventListener('click',()=>admin('start'));
+  $('stopBtn').addEventListener('click',()=>admin('stop'));
+  $('resetBtn').addEventListener('click',()=>admin('reset'));
+  $('fsBtn').addEventListener('click',()=>{ if(!document.fullscreenElement) document.documentElement.requestFullscreen?.().catch(()=>{}); else document.exitFullscreen?.(); });
+  window.addEventListener('resize',()=>state&&render(state,true));
+
+  applyLang();
+  connect();
+})();
+</script>
+</body>
+</html>

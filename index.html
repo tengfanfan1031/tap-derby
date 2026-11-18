@@ -1,0 +1,747 @@
+<!doctype html>
+<html lang="zh-Hant">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no,viewport-fit=cover">
+<meta name="theme-color" content="#0a1712">
+<title>搖搖賽馬 Tap Derby</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@400;500;700;900&family=Oswald:wght@500;700&display=swap">
+<style>
+/* 搖搖賽馬：電視當房主（跑道＋QR Code），手機狂按替自己那枱加速。夜間馬場配色。 */
+:root{
+  --night:#0a1712;--panel:#0f241b;--turf:#14432e;--turf-2:#103a27;--rail:#f1ecdc;--ink:#f1ecdc;
+  --muted:#93ad9f;--line:rgba(241,236,220,.15);--gold:#e9b72f;--bad:#ffb4a8;
+  --display:"Oswald","Noto Sans TC",system-ui,sans-serif;
+  --body:"Noto Sans TC",system-ui,-apple-system,"PingFang TC","Microsoft JhengHei",sans-serif;
+  color-scheme:dark;
+}
+*{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+[hidden]{display:none!important}
+html,body{margin:0;min-height:100%}
+body{background:var(--night);color:var(--ink);font-family:var(--body);font-size:16px;line-height:1.5}
+button{font-family:var(--body);cursor:pointer;border-radius:12px;border:2px solid var(--line);background:transparent;color:var(--ink);padding:12px 18px;font-weight:900;font-size:16px}
+button:focus-visible,input:focus-visible,select:focus-visible{outline:3px solid var(--gold);outline-offset:2px}
+button:disabled{opacity:.4;cursor:not-allowed}
+.btn-go{background:var(--gold);border-color:var(--gold);color:#0a1712}
+input,select{font:inherit;font-size:17px;width:100%;padding:13px;border-radius:12px;border:1px solid var(--line);background:var(--panel);color:var(--ink);text-align:center}
+.lang{display:inline-flex;border:1px solid var(--line);border-radius:999px;overflow:hidden;flex:none}
+.lang button{border:0;border-radius:0;padding:6px 14px;font-size:14px;font-weight:700;color:var(--muted)}
+.lang button[aria-pressed="true"]{background:var(--ink);color:#0a1712}
+.silk{width:30px;height:30px;border-radius:7px;display:grid;place-items:center;font-family:var(--display);font-weight:700;color:#0a1712;font-size:17px;flex:none}
+.muted{color:var(--muted)}
+.err{color:var(--bad);font-size:14px;min-height:1.2em;margin:0}
+
+/* ===== 手機 ===== */
+.phone-shell{min-height:100vh;min-height:100dvh;display:flex;flex-direction:column;
+  padding:max(10px,env(safe-area-inset-top,0px)) max(18px,env(safe-area-inset-right,0px)) max(28px,env(safe-area-inset-bottom,0px)) max(18px,env(safe-area-inset-left,0px));
+  -webkit-user-select:none;user-select:none;-webkit-touch-callout:none;overscroll-behavior:none;touch-action:manipulation}
+.phone-top{display:flex;justify-content:flex-end;padding-bottom:8px}
+.app{flex:1;display:flex;flex-direction:column;gap:14px;text-align:center;max-width:460px;width:100%;margin:0 auto}
+.app input{-webkit-user-select:text;user-select:text}
+.title{font-family:var(--display);font-weight:700;font-size:34px;color:var(--gold);margin:0;line-height:1.2}
+.text{color:var(--muted);font-size:15px;margin:0}
+.tables{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+.tables button{padding:20px 0;font-size:19px}
+.me{display:flex;align-items:center;justify-content:center;gap:10px;font-weight:900;font-size:19px}
+.big{font-family:var(--display);font-size:84px;font-weight:700;line-height:1.05;color:var(--gold)}
+.grow{flex:1;display:flex;flex-direction:column;justify-content:center;gap:12px}
+.tap{flex:1;min-height:300px;border:0;border-radius:28px;color:#0a1712;font-family:var(--display);font-size:68px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:4px;touch-action:none;transition:transform .05s}
+.tap small{font-family:var(--body);font-size:16px;font-weight:700;opacity:.8}
+.tap.hit{transform:scale(.96)}
+.stats{display:flex;justify-content:space-between;align-items:baseline;font-variant-numeric:tabular-nums;gap:8px}
+.stats b{font-family:var(--display);font-size:28px}
+.bar{height:12px;border-radius:6px;background:var(--line);overflow:hidden}
+.bar i{display:block;height:100%;width:0;transition:width .15s linear}
+.ghost{border-color:var(--line);color:var(--muted);font-weight:700;font-size:15px;padding:10px}
+.mvp{color:var(--gold);font-weight:900}
+.status{position:fixed;left:0;right:0;bottom:max(6px,env(safe-area-inset-bottom,0px));text-align:center;pointer-events:none;font-size:13px;color:var(--bad)}
+.divider{display:flex;align-items:center;gap:10px;color:var(--muted);font-size:13px}
+.divider::before,.divider::after{content:"";flex:1;height:1px;background:var(--line)}
+.row{display:flex;gap:10px}
+.row>*{flex:1;min-width:0}
+.code-input{font-family:var(--display);letter-spacing:.3em;text-transform:uppercase;font-size:24px}
+
+/* ===== 電視 ===== */
+.tv{padding:20px max(20px,env(safe-area-inset-left,0px))}
+.tv-wrap{max-width:1600px;margin:0 auto;display:grid;grid-template-columns:minmax(0,1fr) 300px;gap:24px;align-items:start}
+@media (max-width:1000px){.tv-wrap{grid-template-columns:minmax(0,1fr)}}
+.tv-main{display:flex;flex-direction:column;gap:16px;min-width:0}
+.tv-head{display:flex;justify-content:space-between;align-items:flex-end;gap:16px;flex-wrap:wrap}
+.tv h1{font-family:var(--display);font-weight:700;font-size:clamp(32px,4vw,56px);line-height:1;margin:0}
+.sub{color:var(--muted);font-size:15px;margin-top:6px}
+.meta{display:flex;gap:12px;align-items:center;flex-wrap:wrap}
+.chip{font-size:15px;padding:6px 14px;border-radius:999px;border:1px solid var(--line);color:var(--muted)}
+.chip[data-phase="race"]{color:#0a1712;background:var(--gold);border-color:var(--gold);font-weight:700}
+.chip[data-phase="done"]{color:var(--ink);border-color:var(--ink)}
+.clock{font-family:var(--display);font-size:32px;font-variant-numeric:tabular-nums;min-width:6ch;text-align:right}
+.board{background:var(--panel);border:1px solid var(--line);border-radius:16px;padding:18px;display:flex;flex-direction:column;gap:14px;position:relative;overflow:hidden}
+.track{display:flex;flex-direction:column;background:repeating-linear-gradient(90deg,var(--turf) 0 70px,var(--turf-2) 70px 140px);border-radius:10px;padding:8px 0;border-top:4px solid var(--rail);border-bottom:4px solid var(--rail)}
+.lane{display:grid;grid-template-columns:170px minmax(0,1fr);align-items:center;min-height:clamp(60px,9vh,96px);border-bottom:1px dashed rgba(241,236,220,.2)}
+.lane:last-child{border-bottom:0}
+.lane.empty{opacity:.4}
+.lane-label{display:flex;align-items:center;gap:10px;padding-left:12px;min-width:0}
+.lane .silk{width:36px;height:36px;font-size:20px;border-radius:8px}
+.lane-name{font-weight:900;font-size:18px;line-height:1.2}
+.lane-sub{font-size:13px;color:var(--muted);font-variant-numeric:tabular-nums}
+.run{position:relative;height:100%;min-height:58px;margin-right:16px}
+.finish{position:absolute;top:-8px;bottom:-8px;right:0;width:12px;background:repeating-linear-gradient(0deg,var(--rail) 0 9px,#0a1712 9px 18px)}
+.horse{position:absolute;top:50%;left:0;width:64px;height:64px;margin-top:-32px;font-size:50px;line-height:64px;text-align:center;will-change:transform;transition:transform .1s linear}
+.horse span{display:inline-block;transform:scaleX(-1)}
+.racing .horse span{animation:bob .3s ease-in-out infinite alternate}
+@keyframes bob{from{transform:scaleX(-1) translateY(0) rotate(0)}to{transform:scaleX(-1) translateY(-6px) rotate(-4deg)}}
+.trail{position:absolute;top:50%;left:0;height:5px;margin-top:-2.5px;border-radius:3px;opacity:.55;transition:width .1s linear}
+.place-tag{position:absolute;top:4px;right:22px;font-family:var(--display);font-size:16px;font-weight:700;padding:2px 10px;border-radius:4px;background:var(--rail);color:#0a1712}
+.overlay{position:absolute;inset:0;display:grid;place-items:center;background:rgba(10,23,18,.75);font-family:var(--display);font-weight:700;font-size:clamp(90px,16vw,220px);color:var(--gold);pointer-events:none;text-align:center}
+.call{display:flex;gap:14px;align-items:baseline;border-top:1px solid var(--line);padding-top:12px;min-height:52px}
+.call-label{font-size:13px;letter-spacing:.12em;color:var(--gold);flex:none;text-transform:uppercase}
+.call-text{font-size:clamp(20px,2.6vw,30px);font-weight:900;min-width:0}
+.controls{display:flex;gap:10px;flex-wrap:wrap;align-items:center}
+.controls button{border-width:1px;font-weight:700}
+.hint{color:var(--muted);font-size:14px}
+.results{display:grid;grid-template-columns:repeat(auto-fit,minmax(170px,1fr));gap:12px}
+.res{border:1px solid var(--line);border-radius:12px;padding:14px;display:flex;flex-direction:column;gap:4px}
+.res.first{border-color:var(--gold);background:rgba(233,183,47,.08)}
+.res-rank{font-family:var(--display);font-size:34px;font-weight:700;line-height:1}
+.res.first .res-rank{color:var(--gold)}
+.res-name{font-weight:900;font-size:18px}
+.res-time{font-size:14px;color:var(--muted);font-variant-numeric:tabular-nums}
+.mvp-box{background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:14px 16px}
+.mvp-box h2{font-size:15px;letter-spacing:.1em;color:var(--gold);margin:0 0 8px;font-weight:700}
+.mvp-box ol{margin:0;padding-left:22px;display:grid;gap:4px;font-size:18px}
+.mvp-box .n{font-family:var(--display);font-variant-numeric:tabular-nums;color:var(--muted);margin-left:8px}
+.side{background:var(--panel);border:1px solid var(--line);border-radius:16px;padding:20px;display:flex;flex-direction:column;gap:10px;align-items:center;text-align:center;position:sticky;top:20px}
+.side h2{margin:0;font-size:22px;font-weight:900}
+.qr{background:#fff;padding:12px;border-radius:12px;width:100%;max-width:260px;aspect-ratio:1;display:grid;place-items:center;color:#0a1712}
+.qr svg{width:100%;height:100%;display:block}
+.room-code{font-family:var(--display);font-size:44px;font-weight:700;letter-spacing:.18em;line-height:1}
+.url{font-family:var(--display);font-size:15px;word-break:break-all;color:var(--muted)}
+.big-n{font-family:var(--display);font-size:60px;font-weight:700;line-height:1;color:var(--gold);font-variant-numeric:tabular-nums}
+@media (prefers-reduced-motion:reduce){.racing .horse span{animation:none}.tap{transition:none}}
+</style>
+</head>
+<body>
+
+<!-- 手機／入口 -->
+<div class="phone-shell" id="phoneShell">
+  <div class="phone-top"><div class="lang" role="group" aria-label="Language"><button data-lang="zh">中文</button><button data-lang="en">English</button></div></div>
+  <main class="app" id="app"></main>
+  <div class="status" id="status"></div>
+</div>
+
+<!-- 電視 -->
+<div class="tv" id="tv" hidden>
+  <div class="tv-wrap">
+    <section class="tv-main">
+      <div class="tv-head">
+        <div><h1 data-i18n="title"></h1><div class="sub" id="raceName"></div></div>
+        <div class="meta">
+          <div class="lang" role="group" aria-label="Language"><button data-lang="zh">中文</button><button data-lang="en">English</button></div>
+          <span class="chip" id="phaseChip" data-phase="idle"></span>
+          <span class="clock" id="clock"></span>
+        </div>
+      </div>
+      <div class="board" id="board">
+        <div class="track" id="track"></div>
+        <div class="call"><span class="call-label" data-i18n="callLabel"></span><span class="call-text" id="call"></span></div>
+        <div class="overlay" id="overlay" hidden></div>
+      </div>
+      <div class="controls">
+        <button class="btn-go" id="startBtn"></button>
+        <button id="stopBtn" hidden data-i18n="stop"></button>
+        <button id="resetBtn" data-i18n="reset"></button>
+        <button id="fsBtn" data-i18n="fullscreen"></button>
+        <span class="hint" id="hint"></span>
+      </div>
+      <div class="results" id="results" hidden></div>
+      <div class="mvp-box" id="mvp" hidden><h2 data-i18n="mvpTitle"></h2><ol id="mvpList"></ol></div>
+    </section>
+    <aside class="side">
+      <h2 data-i18n="scan"></h2>
+      <div class="qr" id="qr"></div>
+      <div class="muted" data-i18n="roomCode"></div>
+      <div class="room-code" id="roomCode"></div>
+      <div class="url" id="joinUrl"></div>
+      <div class="big-n" id="total">0</div>
+      <div class="hint" data-i18n="joined"></div>
+      <div class="hint" id="tvConn"></div>
+    </aside>
+  </div>
+</div>
+
+<script src="https://unpkg.com/peerjs@1.5.4/dist/peerjs.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/qrcode-generator/1.4.4/qrcode.min.js"></script>
+<script>
+(() => {
+  // =====================================================================
+  //  共用設定與文字
+  // =====================================================================
+  const PREFIX = 'tapderby-tw-';
+  const COLORS = ['#e5484d','#f0c53c','#3d8df5','#c46cf0','#2fbf71','#ff8a3d','#4dd0e1','#f06292'];
+  const RACE_SECONDS = 20, AVG_TAPS = 6.5, STEP = 100 / (AVG_TAPS * RACE_SECONDS);
+  const MAX_TAPS_PER_SEC = 16, COUNTDOWN_MS = 3000, RACE_TIMEOUT_MS = 90000, MAX_PLAYERS = 120;
+
+  const I18N = {
+    zh: {
+      title:'搖搖賽馬', table:i=>`第 ${i+1} 枱`,
+      // 入口
+      landIntro:'全場分枱比賽：用手機狂按，替自己那枱的馬加速！', hostTitle:'我是主持人', tableCount:n=>`${n} 張枱`,
+      hostBtn:'在電視開房', or:'或', joinCodePh:'房間代碼', joinBtn:'加入比賽', needCode:'請輸入電視上的 4 碼房間代碼。',
+      noPeer:'連線元件載入失敗，請確認網絡後重新整理。', opening:'開房中…', openFail:t=>`開房失敗（${t}），請再試一次。`,
+      // 手機
+      connecting:'連線中…', notFound:'找不到這個房間，請確認電視上的代碼。', connFail:'連唔到房間，請確認網絡後再試。', retry:'再試一次',
+      joinIntro:'輸入你的名字（可以唔填），<br>再揀你坐緊嗰張枱。', namePh:'你的名字或花名',
+      joinedCount:n=>`已有 ${n} 人加入`, ready:'準備',
+      waitText:'等主持人開始比賽。<br>開跑之後，用手指狂按個大掣！<br>可以用兩隻手指輪流按。',
+      totalNow:n=>`全場已有 <b id="tot">${n}</b> 人`, change:'轉枱',
+      countText:'準備好手指！', go:'開跑！', tap:'按！', tapSub:'愈快愈好',
+      myTaps:n=>`你按咗 <b id="myTaps">${n}</b> 下`, crossed:'已衝線！', nowPlace:k=>`暫時第 ${k}`,
+      place:['冠軍','亞軍','季軍','第四','第五','第六','第七','第八'], finished:'完場',
+      tableTime:t=>`你張枱用咗 ${t} 秒衝線`, tableDnf:'你張枱未到終點', youTapped:n=>`你一個人按咗 ${n} 下`,
+      mvp:k=>`你係全場第 ${k} 快手指！`, winMsg:'恭喜！快啲同枱友擊掌！', nextMsg:'等主持人開下一場，再嚟過！',
+      errBusy:'比賽進行中，完場後先可以轉枱', errFull:'房間已滿。', reconnect:'連線不穩，重新連線中…',
+      // 電視
+      raceName:n=>`第 ${n} 場 · 尾牙盃`, callLabel:'現場評述',
+      phase:{idle:'等待開跑',count:'準備',race:'比賽中',done:'完場'}, sec:'秒',
+      start:'開始比賽', again:'再跑一場', stop:'提早完場', reset:'重設', fullscreen:'全螢幕',
+      hintIdle:'按「開始比賽」後會倒數 3 秒。請保持這個頁面開啟，電視就是房主。', hintNoPlayers:'未有人加入，請大家先掃 QR Code。',
+      scan:'掃描加入比賽', roomCode:'房間代碼', joined:'人已加入',
+      tvOk:'房間已開放', tvBad:'與配對伺服器斷線，重新連線中…（已連上的手機不受影響）',
+      players:n=>`${n} 人`, rate:(n,r)=>`${n} 人 · 每人 ${r} 下/秒`,
+      time:(t,d)=>`${t} 秒${d?` · 慢 ${d} 秒`:''}`, dnf:p=>`未到終點 · 跑咗 ${p}%`,
+      mvpTitle:'全場最快手指', anon:'無名英雄', taps:n=>`${n} 下`,
+      say:{
+        idle:'各位同事，請掃 QR Code 揀返自己張枱！', count:'準備……大家拎起手機！', go:'閘門打開！一齊衝出！',
+        win:a=>`${a}衝線！恭喜奪得冠軍！`, done:a=>`完場！冠軍係${a}，請派代表上台領獎！`,
+        early:(a,b)=>[`${a}起步最快，${b}緊貼其後！`,'鬥得好激烈，大家用力按呀！'],
+        close:(a,b)=>[`${a}同${b}頭馬頸位，差距不到半個馬位！`,`${b}追緊上嚟喇！`],
+        lead:(a,g,z)=>[`${a}拋離對手，領先 ${g} 個身位！`,`${z}仲有機會，唔好放棄！`],
+        straightClose:(a,b)=>`入直路喇！${a}同${b}鬥到最後！`, straight:a=>`入直路喇！${a}一馬當先！`,
+      },
+    },
+    en: {
+      title:'Tap Derby', table:i=>`Table ${i+1}`,
+      landIntro:'Tables race each other. Tap your phone as fast as you can to speed up your table\'s horse!', hostTitle:'I\'m the host', tableCount:n=>`${n} tables`,
+      hostBtn:'Host on TV', or:'or', joinCodePh:'Room code', joinBtn:'Join the race', needCode:'Enter the 4-character room code on the TV.',
+      noPeer:'Could not load multiplayer. Check your connection and refresh.', opening:'Opening the room…', openFail:t=>`Could not open a room (${t}). Please try again.`,
+      connecting:'Connecting…', notFound:'No room with that code. Check the TV.', connFail:'Could not reach the room. Check your connection and try again.', retry:'Try again',
+      joinIntro:'Enter your name (optional),<br>then pick the table you\'re sitting at.', namePh:'Your name or nickname',
+      joinedCount:n=>`${n} ${n===1?'player has':'players have'} joined`, ready:'Ready',
+      waitText:'Waiting for the host to start.<br>When the race begins, tap the big button as fast as you can!<br>Try alternating two fingers.',
+      totalNow:n=>`<b id="tot">${n}</b> players in the room`, change:'Change table',
+      countText:'Fingers ready!', go:'GO!', tap:'TAP!', tapSub:'Faster is better',
+      myTaps:n=>`You tapped <b id="myTaps">${n}</b> times`, crossed:'Finished!', nowPlace:k=>`Now ${['1st','2nd','3rd'][k-1]||k+'th'}`,
+      place:['1st','2nd','3rd','4th','5th','6th','7th','8th'], finished:'Done',
+      tableTime:t=>`Your table finished in ${t}s`, tableDnf:'Your table did not finish', youTapped:n=>`You tapped ${n} times`,
+      mvp:k=>`You're #${k} fastest fingers in the room!`, winMsg:'Congratulations! High-five your table!', nextMsg:'Wait for the next race and try again!',
+      errBusy:'A race is running. You can change tables after it ends.', errFull:'This room is full.', reconnect:'Connection unstable. Reconnecting…',
+      raceName:n=>`Race ${n} · Year-End Cup`, callLabel:'Live call',
+      phase:{idle:'Waiting',count:'Get ready',race:'Racing',done:'Finished'}, sec:'s',
+      start:'Start race', again:'Run again', stop:'End race now', reset:'Reset', fullscreen:'Full screen',
+      hintIdle:'The race starts after a 3-second countdown. Keep this page open: the TV hosts the room.', hintNoPlayers:'Nobody has joined yet. Ask everyone to scan the QR code.',
+      scan:'Scan to join', roomCode:'Room code', joined:'players joined',
+      tvOk:'Room is open', tvBad:'Lost the matchmaking server. Reconnecting… (phones already connected keep playing)',
+      players:n=>`${n} ${n===1?'player':'players'}`, rate:(n,r)=>`${n} players · ${r} taps/s each`,
+      time:(t,d)=>`${t}s${d?` · +${d}s`:''}`, dnf:p=>`Did not finish · ${p}%`,
+      mvpTitle:'Fastest fingers', anon:'Mystery tapper', taps:n=>`${n} taps`,
+      say:{
+        idle:'Scan the QR code and pick your table!', count:'Get ready… phones in hand!', go:'And they\'re off!',
+        win:a=>`${a} crosses the line! ${a} wins!`, done:a=>`That's the race! ${a} takes the cup. Send someone up to collect the prize!`,
+        early:(a,b)=>[`${a} gets the best start, ${b} right behind!`,'What a battle. Keep tapping!'],
+        close:(a,b)=>[`${a} and ${b} neck and neck!`,`${b} is closing in!`],
+        lead:(a,g,z)=>[`${a} pulls away, ${g} lengths clear!`,`${z} is still in this. Don't give up!`],
+        straightClose:(a,b)=>`Into the home straight! ${a} and ${b} fighting to the line!`, straight:a=>`Into the home straight! ${a} out in front!`,
+      },
+    },
+  };
+
+  const $ = id => document.getElementById(id);
+  const store = { get(k){try{return localStorage.getItem(k)}catch(e){return null}}, set(k,v){try{localStorage.setItem(k,v)}catch(e){}} };
+  const esc = s => String(s).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+  const qs = new URLSearchParams(location.search);
+  let lang = qs.get('lang') || store.get('derby-lang') || (/^zh/i.test(navigator.language) ? 'zh' : 'en');
+  if (!I18N[lang]) lang = 'zh';
+  const L = () => I18N[lang];
+  const cleanCode = s => String(s || '').toUpperCase().replace(/[^A-Z0-9]/g, '').slice(0, 4);
+  const randCode = () => { const A = 'ABCDEFGHJKMNPQRSTUVWXYZ23456789'; let s = ''; for (let i = 0; i < 4; i++) s += A[Math.floor(Math.random() * A.length)]; return s; };
+  const baseUrl = () => location.origin + location.pathname.replace(/index\.html$/, '');
+
+  let cid = store.get('derby-cid');
+  if (!cid || !/^[a-z0-9]{6,20}$/.test(cid)) { cid = Math.random().toString(36).slice(2, 12); store.set('derby-cid', cid); }
+
+  const langListeners = [];
+  function setLang(l) { lang = l; store.set('derby-lang', l); applyLangButtons(); langListeners.forEach(f => f()); }
+  function applyLangButtons() {
+    document.documentElement.lang = lang === 'zh' ? 'zh-Hant' : 'en';
+    document.querySelectorAll('[data-lang]').forEach(b => b.setAttribute('aria-pressed', String(b.dataset.lang === lang)));
+    document.querySelectorAll('[data-i18n]').forEach(el => { el.textContent = L()[el.dataset.i18n]; });
+  }
+  document.querySelectorAll('[data-lang]').forEach(b => b.addEventListener('click', () => setLang(b.dataset.lang)));
+  applyLangButtons();
+
+  const hasPeer = typeof Peer !== 'undefined';
+  const app = $('app'), statusEl = $('status');
+
+  // =====================================================================
+  //  入口畫面
+  // =====================================================================
+  let landingMsg = '';
+  function renderLanding() {
+    const tc = Number(store.get('derby-tables')) || 4;
+    app.innerHTML = `<p class="title">${L().title}</p>
+      <p class="text">${L().landIntro}</p>
+      <input id="code" class="code-input" maxlength="4" autocomplete="off" autocapitalize="characters">
+      <button class="btn-go" id="joinBtn">${L().joinBtn}</button>
+      <div class="divider">${L().or}</div>
+      <p class="text" style="font-weight:700;color:var(--ink)">${L().hostTitle}</p>
+      <div class="row">
+        <select id="tableCount">${[2,3,4,5,6,7,8].map(n => `<option value="${n}"${n===tc?' selected':''}>${L().tableCount(n)}</option>`).join('')}</select>
+        <button id="hostBtn">${L().hostBtn}</button>
+      </div>
+      <p class="err" id="landMsg">${esc(landingMsg || (hasPeer ? '' : L().noPeer))}</p>`;
+    $('code').placeholder = L().joinCodePh;
+    $('joinBtn').onclick = () => {
+      const c = cleanCode($('code').value);
+      if (c.length < 4) { landingMsg = L().needCode; $('landMsg').textContent = landingMsg; $('code').focus(); return; }
+      location.search = '?room=' + c;
+    };
+    $('hostBtn').onclick = () => startHost(Number($('tableCount').value) || 4);
+    if (!hasPeer) { $('joinBtn').disabled = true; $('hostBtn').disabled = true; }
+  }
+
+  // =====================================================================
+  //  手機端
+  // =====================================================================
+  let roomCode = cleanCode(qs.get('room'));
+  let peer = null, conn = null, retryTimer = null, state = null, view = '', pending = 0, localTaps = 0;
+  let myName = store.get('derby-name') || '', wantTable = null, joinErrKey = '', phoneErr = '', everConnected = false;
+
+  function startPlayer() {
+    if (!hasPeer) { phoneErr = 'noPeer'; renderPhone(); return; }
+    phoneErr = ''; renderPhone();
+    const p = new Peer();
+    const timer = setTimeout(() => { if (!conn && !everConnected) { phoneErr = 'connFail'; renderPhone(); } }, 15000);
+    p.on('open', () => { peer = p; connectRoom(() => clearTimeout(timer)); });
+    p.on('error', e => {
+      if (e.type === 'peer-unavailable') {
+        if (!everConnected) { clearTimeout(timer); phoneErr = 'notFound'; renderPhone(); }
+        return; // 重連期間暫時找不到電視：等下一次重試
+      }
+      if (!everConnected) { clearTimeout(timer); phoneErr = 'connFail'; renderPhone(); }
+    });
+    p.on('disconnected', () => { if (peer === p && !p.destroyed) { try { p.reconnect(); } catch {} } });
+  }
+
+  function connectRoom(onFirstOpen) {
+    if (!peer) return;
+    const c = peer.connect(PREFIX + roomCode.toLowerCase(), { reliable: true, metadata: { cid } });
+    c.on('open', () => {
+      conn = c; everConnected = true; phoneErr = ''; statusEl.textContent = '';
+      if (onFirstOpen) { onFirstOpen(); onFirstOpen = null; }
+      // 枱號優先次序：網址的 &t=枱號（每枱專屬 QR Code）＞ 上次在這個房間揀的枱
+      const qt = Number(qs.get('t'));
+      const t = store.get('derby-table-' + roomCode);
+      if (wantTable == null && Number.isInteger(qt) && qt >= 1 && qt <= 8) { wantTable = qt - 1; qs.delete('t'); }
+      else if (t != null && wantTable == null) wantTable = Number(t);
+      if (wantTable != null) send({ t: 'join', table: wantTable, name: myName });
+      view = ''; renderPhone();
+    });
+    c.on('data', onHostMsg);
+    c.on('close', () => {
+      if (conn !== c) return;
+      conn = null; statusEl.textContent = L().reconnect;
+      clearTimeout(retryTimer); retryTimer = setTimeout(() => connectRoom(), 2500);
+    });
+    c.on('error', () => {});
+  }
+  function send(m) { try { if (conn && conn.open) conn.send(m); } catch {} }
+
+  function onHostMsg(m) {
+    if (!m || typeof m !== 'object') return;
+    if (m.t === 's') { state = m.s; renderPhone(); return; }
+    if (m.t === 'err') { joinErrKey = m.code === 'busy' ? 'errBusy' : m.code === 'full' ? 'errFull' : ''; wantTable = null; view = ''; renderPhone(); }
+  }
+
+  // 每 150 毫秒把累積的點擊送去電視
+  setInterval(() => { if (pending > 0 && conn && conn.open) { const n = pending; pending = 0; send({ t: 'tap', n }); } }, 150);
+
+  function hit(e) {
+    e.preventDefault();
+    if (!state || state.phase !== 'race' || !state.me || state.me.table == null) return;
+    const t = state.tables[state.me.table]; if (!t || t.finish != null) return;
+    pending++; localTaps++;
+    if (navigator.vibrate) try { navigator.vibrate(8); } catch (_) {}
+    const b = e.currentTarget; b.classList.remove('hit'); void b.offsetWidth; b.classList.add('hit');
+    const c = $('myTaps'); if (c) c.textContent = localTaps;
+  }
+
+  const tnameP = i => (state && state.tables[i] && state.tables[i].name) || L().table(i);
+  const meHtml = t => `<div class="me"><span class="silk" style="background:${COLORS[t]}">${t + 1}</span>${esc(tnameP(t))}</div>`;
+
+  function renderPhone() {
+    if (phoneErr) {
+      app.innerHTML = `<p class="title">${L().title}</p><div class="grow"><p class="err" style="font-size:16px">${L()[phoneErr]}</p></div>
+        <button class="btn-go" id="retryBtn">${L().retry}</button>`;
+      $('retryBtn').onclick = () => location.reload();
+      view = 'err'; return;
+    }
+    if (!state) { if (view !== 'connecting') { app.innerHTML = `<p class="title">${L().title}</p><div class="grow"><p class="text">${L().connecting}</p></div>`; view = 'connecting'; } return; }
+    const s = state, my = s.me && s.me.table != null && wantTable != null ? s.me.table : null;
+    if (s.phase === 'count') localTaps = 0;
+    const v = my == null ? 'join' : s.phase;
+    const key = [v, my, v === 'count' ? s.countdown : '', v === 'done' ? s.no : '', joinErrKey, lang].join('|');
+    if (key === view) { livePhone(); return; }
+    view = key;
+
+    if (v === 'join') {
+      app.innerHTML = `<p class="title">${L().title}</p>
+        <p class="text">${L().joinIntro}</p>
+        <input id="name" maxlength="12" autocomplete="off">
+        <div class="tables">${s.tables.map((t, i) => `<button data-t="${i}" style="border-color:${COLORS[i]};color:${COLORS[i]}">${esc(tnameP(i))}</button>`).join('')}</div>
+        <p class="err">${joinErrKey ? L()[joinErrKey] : ''}</p>
+        <p class="text">${L().joinedCount(s.total)}</p>`;
+      const nameEl = $('name'); nameEl.placeholder = L().namePh; nameEl.value = myName;
+      nameEl.addEventListener('input', () => { myName = nameEl.value.trim().slice(0, 12); store.set('derby-name', myName); });
+      app.querySelectorAll('[data-t]').forEach(b => b.addEventListener('click', () => {
+        wantTable = +b.dataset.t; joinErrKey = ''; store.set('derby-table-' + roomCode, String(wantTable));
+        send({ t: 'join', table: wantTable, name: myName });
+      }));
+      return;
+    }
+    if (v === 'idle') {
+      app.innerHTML = `${meHtml(my)}<div class="grow"><div class="big">${L().ready}</div><p class="text">${L().waitText}</p></div>
+        <p class="text">${L().totalNow(s.total)}</p><button class="ghost" id="change">${L().change}</button>`;
+      $('change').onclick = () => { wantTable = null; joinErrKey = ''; view = ''; renderPhone(); };
+      return;
+    }
+    if (v === 'count') {
+      app.innerHTML = `${meHtml(my)}<div class="grow"><div class="big">${s.countdown || L().go}</div><p class="text">${L().countText}</p></div>`;
+      return;
+    }
+    if (v === 'race') {
+      const c = COLORS[my];
+      app.innerHTML = `${meHtml(my)}
+        <button class="tap" id="tapBtn" style="background:${c}">${L().tap}<small>${L().tapSub}</small></button>
+        <div class="stats"><span>${L().myTaps(localTaps)}</span><span id="place"></span></div>
+        <div class="bar"><i id="bar" style="background:${c}"></i></div>`;
+      const b = $('tapBtn');
+      b.addEventListener('pointerdown', hit);
+      b.addEventListener('contextmenu', e => e.preventDefault());
+      livePhone(); return;
+    }
+    if (v === 'done') {
+      const k = s.ranking ? s.ranking.indexOf(my) : -1, t = s.tables[my], mvp = s.me.mvp;
+      app.innerHTML = `${meHtml(my)}<div class="grow">
+        <div class="big">${k >= 0 ? L().place[k] : L().finished}</div>
+        <p class="text">${t && t.finish != null ? L().tableTime(t.finish.toFixed(2)) : L().tableDnf}<br>${L().youTapped(s.me.taps)}</p>
+        ${mvp >= 0 ? `<p class="text mvp">${L().mvp(mvp + 1)}</p>` : ''}
+        <p class="text">${k === 0 ? L().winMsg : L().nextMsg}</p></div>`;
+    }
+  }
+
+  function livePhone() {
+    const s = state; if (!s || !s.me) return;
+    const tot = $('tot'); if (tot) tot.textContent = s.total;
+    const t = s.tables[s.me.table]; if (!t) return;
+    const bar = $('bar'); if (bar) bar.style.width = t.prog + '%';
+    const pl = $('place');
+    if (pl && s.phase === 'race') {
+      const ahead = s.tables.filter(x => x !== t && (x.players > 0 || x.prog > 0) && (
+        (x.finish != null && (t.finish == null || x.finish < t.finish)) || (x.finish == null && t.finish == null && x.prog > t.prog))).length;
+      pl.textContent = t.finish != null ? L().crossed : L().nowPlace(ahead + 1);
+      const btn = $('tapBtn'); if (btn && t.finish != null) btn.disabled = true;
+    }
+  }
+
+  // =====================================================================
+  //  電視（房主）端：比賽邏輯全部在這裡運行
+  // =====================================================================
+  let host = null;
+  // host = { peer, code, n, players: Map<cid,P>, race, raceNo }
+  // P = { cid, name, table, conn, online, taps, sec, secN }
+
+  function freshRace(no) {
+    const n = host.n;
+    return { no, phase: 'idle', countdownEnd: 0, startAt: 0, endAt: 0,
+      prog: Array(n).fill(0), rate: Array(n).fill(0), finish: Array(n).fill(null), pending: Array(n).fill(0), entered: Array(n).fill(false), top: [] };
+  }
+
+  function startHost(n) {
+    if (!hasPeer) return;
+    store.set('derby-tables', String(n));
+    landingMsg = L().opening; const lm = $('landMsg'); if (lm) lm.textContent = landingMsg;
+    ['joinBtn', 'hostBtn'].forEach(id => { const b = $(id); if (b) b.disabled = true; });
+    const saved = cleanCode(store.get('derby-host-code'));
+    const tryOpen = attempt => {
+      // 先沿用上次的代碼（預先印好的 QR Code 仍然有效）；被佔用就稍後再試，多次失敗才換新代碼
+      const code = saved.length === 4 && attempt < 4 ? saved : randCode();
+      const p = new Peer(PREFIX + code.toLowerCase());
+      p.on('open', () => { store.set('derby-host-code', code); enterHost(p, code, n); });
+      p.on('connection', onPlayerConn);
+      p.on('error', e => {
+        if (e.type === 'unavailable-id' && attempt < 8) { p.destroy(); setTimeout(() => tryOpen(attempt + 1), attempt < 4 ? 2500 : 0); return; }
+        if (!host) {
+          landingMsg = L().openFail(e.type); const m = $('landMsg'); if (m) m.textContent = landingMsg;
+          ['joinBtn', 'hostBtn'].forEach(id => { const b = $(id); if (b) b.disabled = false; }); p.destroy();
+        }
+      });
+      p.on('disconnected', () => { if (host && host.peer === p && !p.destroyed) { $('tvConn').textContent = L().tvBad; try { p.reconnect(); } catch {} } });
+      p.on('open', () => { if (host) $('tvConn').textContent = L().tvOk; });
+    };
+    tryOpen(0);
+  }
+
+  function enterHost(p, code, n) {
+    host = { peer: p, code, n, players: new Map(), raceNo: 1 };
+    host.race = freshRace(1);
+    $('phoneShell').hidden = true; $('tv').hidden = false;
+    const url = baseUrl() + '?room=' + code;
+    $('roomCode').textContent = code;
+    $('joinUrl').textContent = url.replace(/^https?:\/\//, '');
+    try { const qr = qrcode(0, 'M'); qr.addData(url); qr.make(); $('qr').innerHTML = qr.createSvgTag({ cellSize: 8, margin: 0, scalable: true }); }
+    catch { $('qr').innerHTML = `<b style="font-size:40px">${code}</b>`; }
+    try { navigator.wakeLock?.request('screen').catch(() => {}); } catch {}
+    document.addEventListener('visibilitychange', () => { if (document.visibilityState === 'visible') try { navigator.wakeLock?.request('screen').catch(() => {}); } catch {} });
+    history.replaceState(null, '', location.pathname + '?host=1');
+    $('tvConn').textContent = L().tvOk;
+    setInterval(hostTick, 50);
+    setInterval(broadcastState, 200);
+    setInterval(() => renderTv(snapshot()), 100);
+    langListeners.push(() => { tvLastPhase = tvLastPhase === 'done' ? 'done-relang' : tvLastPhase; renderTv(snapshot(), true); });
+    renderTv(snapshot());
+  }
+
+  function onPlayerConn(c) {
+    const pcid = String((c.metadata || {}).cid || '').slice(0, 20);
+    c.on('open', () => {
+      if (!host || !pcid) { c.close(); return; }
+      let P = host.players.get(pcid);
+      if (!P) {
+        if (host.players.size >= MAX_PLAYERS) { try { c.send({ t: 'err', code: 'full' }); } catch {} setTimeout(() => c.close(), 500); return; }
+        P = { cid: pcid, name: '', table: null, conn: null, online: false, taps: 0, sec: 0, secN: 0 };
+        host.players.set(pcid, P);
+      }
+      if (P.conn && P.conn !== c) { try { P.conn.close(); } catch {} }
+      P.conn = c; P.online = true;
+      sendState(P, snapshot());
+    });
+    c.on('data', m => {
+      const P = host && host.players.get(pcid); if (!P || P.conn !== c || !m || typeof m !== 'object') return;
+      const R = host.race;
+      if (m.t === 'join') {
+        const table = Number(m.table);
+        if (!Number.isInteger(table) || table < 0 || table >= host.n) return;
+        if ((R.phase === 'race' || R.phase === 'count') && P.table != null && P.table !== table) { try { c.send({ t: 'err', code: 'busy' }); } catch {} return; }
+        P.table = table;
+        P.name = String(m.name || '').replace(/[\u0000-\u001f<>]/g, '').trim().slice(0, 12);
+        sendState(P, snapshot());
+        return;
+      }
+      if (m.t === 'tap') {
+        let k = Math.max(0, Math.min(40, Math.floor(Number(m.n) || 0)));
+        if (R.phase !== 'race' || P.table == null || R.finish[P.table] != null || k <= 0) return;
+        const sec = Math.floor(Date.now() / 1000);
+        if (P.sec !== sec) { P.sec = sec; P.secN = 0; }
+        k = Math.min(k, MAX_TAPS_PER_SEC - P.secN);
+        if (k > 0) { P.secN += k; P.taps += k; R.pending[P.table] += k; }
+      }
+    });
+    c.on('close', () => {
+      const P = host && host.players.get(pcid); if (!P || P.conn !== c) return;
+      P.online = false; P.conn = null;
+    });
+    c.on('error', () => {});
+  }
+
+  function tableCounts() {
+    const c = Array(host.n).fill(0);
+    for (const P of host.players.values()) if (P.online && P.table != null) c[P.table]++;
+    return c;
+  }
+
+  function hostTick() {
+    const R = host.race, t = Date.now();
+    if (R.phase === 'count' && t >= R.countdownEnd) {
+      R.phase = 'race'; R.startAt = t; R.pending.fill(0);
+      R.entered = tableCounts().map(n => n > 0);
+      for (const P of host.players.values()) P.taps = 0;
+    }
+    if (R.phase !== 'race') return;
+    const counts = tableCounts(), dt = 0.05, elapsed = (t - R.startAt) / 1000;
+    for (let i = 0; i < host.n; i++) {
+      if (R.finish[i] != null) { R.pending[i] = 0; continue; }
+      if (counts[i] > 0) R.entered[i] = true;
+      const per = R.pending[i] / Math.max(1, counts[i]);
+      R.pending[i] = 0;
+      R.rate[i] = R.rate[i] * 0.92 + (per / dt) * 0.08;
+      R.prog[i] = Math.min(100, R.prog[i] + per * STEP);
+      if (R.prog[i] >= 100) R.finish[i] = elapsed;
+    }
+    const runners = R.entered.map((e, i) => e ? i : -1).filter(i => i >= 0);
+    if ((runners.length && runners.every(i => R.finish[i] != null)) || t - R.startAt > RACE_TIMEOUT_MS) endRace();
+  }
+
+  function endRace() {
+    const R = host.race;
+    R.phase = 'done'; R.endAt = Date.now();
+    R.top = [...host.players.values()].filter(P => P.taps > 0).sort((a, b) => b.taps - a.taps).slice(0, 5)
+      .map(P => ({ cid: P.cid, name: P.name, table: P.table, taps: P.taps }));
+  }
+
+  function ranking() {
+    const R = host.race;
+    return R.prog.map((_, i) => i).filter(i => R.entered[i] || R.prog[i] > 0).sort((a, b) => {
+      const fa = R.finish[a], fb = R.finish[b];
+      if (fa != null && fb != null) return fa - fb;
+      if (fa != null) return -1; if (fb != null) return 1;
+      return R.prog[b] - R.prog[a];
+    });
+  }
+
+  function snapshot() {
+    const R = host.race, counts = tableCounts(), t = Date.now();
+    return {
+      no: R.no, phase: R.phase,
+      countdown: R.phase === 'count' ? Math.max(0, Math.ceil((R.countdownEnd - t) / 1000)) : 0,
+      elapsed: R.phase === 'race' ? (t - R.startAt) / 1000 : R.phase === 'done' ? (R.endAt - R.startAt) / 1000 : 0,
+      total: counts.reduce((a, b) => a + b, 0),
+      tables: counts.map((n, i) => ({ name: null, players: n, prog: +R.prog[i].toFixed(2), rate: +R.rate[i].toFixed(2), finish: R.finish[i] })),
+      ranking: R.phase === 'done' ? ranking() : null,
+      top: R.phase === 'done' ? R.top.map(({ name, table, taps }) => ({ name, table, taps })) : null,
+    };
+  }
+
+  function sendState(P, snap) {
+    if (!P.conn || !P.conn.open) return;
+    const R = host.race;
+    const me = { table: P.table, taps: P.taps, mvp: R.phase === 'done' ? R.top.findIndex(x => x.cid === P.cid) : -1 };
+    const s = Object.assign({}, snap, { me, top: null });
+    try { P.conn.send({ t: 's', s }); } catch {}
+  }
+  function broadcastState() { const snap = snapshot(); for (const P of host.players.values()) if (P.online) sendState(P, snap); }
+
+  // ----- 電視畫面 -----
+  let lanes = [], tvLastPhase = '', lastCountdown = -1, lastCallAt = 0, announced = false, callFn = () => L().say.idle, hintKey = 'hintIdle';
+  const tname = (s, i) => s.tables[i].name || L().table(i);
+  const placeOf = (tables, i) => tables.filter(t => t.finish != null && t.finish < tables[i].finish).length;
+  function say(fn) { callFn = fn; $('call').textContent = fn(); }
+
+  function buildLanes(n) {
+    const track = $('track'); track.innerHTML = '';
+    lanes = Array.from({ length: n }, (_, i) => {
+      const lane = document.createElement('div'); lane.className = 'lane';
+      lane.innerHTML = `<div class="lane-label"><span class="silk" style="background:${COLORS[i]}">${i + 1}</span>
+        <div><div class="lane-name"></div><div class="lane-sub"></div></div></div>
+        <div class="run"><div class="trail" style="background:${COLORS[i]}"></div><div class="horse"><span>🏇</span></div><div class="finish"></div></div>`;
+      track.appendChild(lane);
+      return { lane, run: lane.querySelector('.run'), horse: lane.querySelector('.horse'), trail: lane.querySelector('.trail'), sub: lane.querySelector('.lane-sub'), name: lane.querySelector('.lane-name') };
+    });
+  }
+
+  function commentary(s) {
+    const t = s.elapsed; if (t - lastCallAt < 2.6) return; lastCallAt = t;
+    const T = s.tables, alive = T.map((x, i) => i).filter(i => T[i].players > 0 && T[i].finish == null).sort((a, b) => T[b].prog - T[a].prog);
+    if (alive.length < 2) return;
+    const a = alive[0], b = alive[1], z = alive[alive.length - 1], gap = T[a].prog - T[b].prog, lead = T[a].prog, pick = Math.random();
+    const choose = arr => arr[Math.floor(pick * arr.length)];
+    if (lead < 25) say(() => choose(L().say.early(tname(s, a), tname(s, b))));
+    else if (lead < 70) {
+      if (gap < 3) say(() => choose(L().say.close(tname(s, a), tname(s, b))));
+      else { const g = gap.toFixed(0); say(() => choose(L().say.lead(tname(s, a), g, tname(s, z)))); }
+    } else say(() => gap < 3 ? L().say.straightClose(tname(s, a), tname(s, b)) : L().say.straight(tname(s, a)));
+  }
+
+  function renderTv(s, force) {
+    if (lanes.length !== s.tables.length) buildLanes(s.tables.length);
+    if (force) { $('call').textContent = callFn(); if (hintKey) $('hint').textContent = L()[hintKey]; }
+    $('raceName').textContent = L().raceName(s.no);
+    $('total').textContent = s.total;
+    const chip = $('phaseChip'); chip.dataset.phase = s.phase; chip.textContent = L().phase[s.phase];
+    $('clock').textContent = s.elapsed.toFixed(1) + ' ' + L().sec;
+    $('board').classList.toggle('racing', s.phase === 'race');
+    $('startBtn').textContent = s.phase === 'done' ? L().again : L().start;
+    $('startBtn').disabled = s.phase === 'count' || s.phase === 'race';
+    $('stopBtn').hidden = s.phase !== 'race';
+
+    s.tables.forEach((t, i) => {
+      const l = lanes[i];
+      l.name.textContent = tname(s, i);
+      l.lane.classList.toggle('empty', t.players === 0 && t.prog === 0);
+      const w = l.run.clientWidth - 64 - 14, x = Math.max(0, Math.min(1, t.prog / 100)) * w;
+      l.horse.style.transform = `translateX(${x}px)`;
+      l.trail.style.width = (x + 24) + 'px';
+      l.sub.textContent = (s.phase === 'race' || s.phase === 'done') && t.players > 0 ? L().rate(t.players, t.rate.toFixed(1)) : L().players(t.players);
+      let tag = l.run.querySelector('.place-tag');
+      if (t.finish != null) { if (!tag) { tag = document.createElement('span'); tag.className = 'place-tag'; l.run.appendChild(tag); } tag.textContent = L().place[placeOf(s.tables, i)]; }
+      else if (tag) tag.remove();
+    });
+
+    const ov = $('overlay');
+    if (s.phase === 'count') { ov.hidden = false; if (s.countdown !== lastCountdown || force) { ov.textContent = s.countdown || L().go; lastCountdown = s.countdown; } }
+    else if (s.phase === 'race' && tvLastPhase === 'count') { ov.textContent = L().go; setTimeout(() => { ov.hidden = true; }, 700); }
+    else if (s.phase !== 'race') ov.hidden = true;
+
+    if (s.phase !== tvLastPhase && !tvLastPhase.startsWith(s.phase)) {
+      if (s.phase === 'idle') { say(() => L().say.idle); announced = false; }
+      if (s.phase === 'count') { say(() => L().say.count); announced = false; }
+      if (s.phase === 'race') { say(() => L().say.go); lastCallAt = 0; }
+    }
+    if (s.phase === 'race') {
+      const firstIdx = s.tables.findIndex((t, i) => t.finish != null && placeOf(s.tables, i) === 0);
+      if (firstIdx >= 0 && !announced) { say(() => L().say.win(tname(s, firstIdx))); announced = true; }
+      else if (firstIdx < 0) commentary(s);
+    }
+
+    const res = $('results'), mvp = $('mvp');
+    if (s.phase === 'done' && s.ranking) {
+      if (tvLastPhase !== 'done') {
+        const r = s.ranking, T = s.tables, first = T[r[0]];
+        res.innerHTML = r.map((i, k) => `<div class="res${k === 0 ? ' first' : ''}"><span class="res-rank">${L().place[k]}</span><span class="res-name" style="color:${COLORS[i]}"></span><span class="res-time"></span></div>`).join('');
+        res.querySelectorAll('.res').forEach((el, k) => {
+          const i = r[k], t = T[i];
+          el.querySelector('.res-name').textContent = tname(s, i);
+          el.querySelector('.res-time').textContent = t.finish != null
+            ? L().time(t.finish.toFixed(2), k > 0 && first.finish != null ? (t.finish - first.finish).toFixed(2) : '')
+            : L().dnf(t.prog.toFixed(0));
+        });
+        res.hidden = !r.length;
+        const list = $('mvpList'); list.innerHTML = '';
+        (s.top || []).forEach(p => {
+          const li = document.createElement('li');
+          li.textContent = `${p.name || L().anon}（${T[p.table] ? tname(s, p.table) : ''}）`;
+          const nn = document.createElement('span'); nn.className = 'n'; nn.textContent = L().taps(p.taps); li.appendChild(nn); list.appendChild(li);
+        });
+        mvp.hidden = !(s.top && s.top.length);
+        if (r.length && tvLastPhase !== 'done-relang') say(() => L().say.done(tname(s, r[0])));
+      }
+    } else { res.hidden = true; mvp.hidden = true; }
+    tvLastPhase = s.phase;
+  }
+
+  $('startBtn').onclick = () => {
+    const R = host.race;
+    if (R.phase === 'count' || R.phase === 'race') return;
+    if (!tableCounts().some(n => n > 0)) { hintKey = 'hintNoPlayers'; $('hint').textContent = L().hintNoPlayers; return; }
+    hintKey = 'hintIdle'; $('hint').textContent = L().hintIdle;
+    if (R.phase === 'done') host.raceNo++;
+    host.race = freshRace(host.raceNo);
+    host.race.phase = 'count'; host.race.countdownEnd = Date.now() + COUNTDOWN_MS;
+    broadcastState();
+  };
+  $('stopBtn').onclick = () => { if (host.race.phase === 'race') { endRace(); broadcastState(); } };
+  $('resetBtn').onclick = () => { host.race = freshRace(host.raceNo); broadcastState(); };
+  $('fsBtn').onclick = () => { if (!document.fullscreenElement) document.documentElement.requestFullscreen?.().catch(() => {}); else document.exitFullscreen?.(); };
+  window.addEventListener('resize', () => { if (host) renderTv(snapshot(), true); });
+
+  // =====================================================================
+  //  啟動
+  // =====================================================================
+  langListeners.push(() => { if (!host) { view = ''; if (roomCode.length === 4) renderPhone(); else renderLanding(); } });
+  if (roomCode.length === 4) startPlayer();
+  else if (qs.get('host') === '1' && hasPeer) { renderLanding(); startHost(Number(store.get('derby-tables')) || 4); }
+  else renderLanding();
+})();
+</script>
+</body>
+</html>
