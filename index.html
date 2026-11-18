@@ -9,7 +9,8 @@
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@400;500;700;900&family=Oswald:wght@500;700&display=swap">
 <style>
-/* 搖搖賽馬：電視當房主（跑道＋QR Code），手機狂按替自己那枱加速。夜間馬場配色。 */
+/* 搖搖賽馬：電視當房主（先顯示大 QR Code 等人入場，再轉跑道），手機狂按替自己那枱加速。
+   中英文同一畫面：中文在上，英文細字在下。夜間馬場配色。 */
 :root{
   --night:#0a1712;--panel:#0f241b;--turf:#14432e;--turf-2:#103a27;--rail:#f1ecdc;--ink:#f1ecdc;
   --muted:#93ad9f;--line:rgba(241,236,220,.15);--gold:#e9b72f;--bad:#ffb4a8;
@@ -21,36 +22,45 @@
 [hidden]{display:none!important}
 html,body{margin:0;min-height:100%}
 body{background:var(--night);color:var(--ink);font-family:var(--body);font-size:16px;line-height:1.5}
-button{font-family:var(--body);cursor:pointer;border-radius:12px;border:2px solid var(--line);background:transparent;color:var(--ink);padding:12px 18px;font-weight:900;font-size:16px}
+button{font-family:var(--body);cursor:pointer;border-radius:12px;border:2px solid var(--line);background:transparent;color:var(--ink);padding:12px 18px;font-weight:900;font-size:16px;line-height:1.3}
 button:focus-visible,input:focus-visible,select:focus-visible{outline:3px solid var(--gold);outline-offset:2px}
 button:disabled{opacity:.4;cursor:not-allowed}
 .btn-go{background:var(--gold);border-color:var(--gold);color:#0a1712}
 input,select{font:inherit;font-size:17px;width:100%;padding:13px;border-radius:12px;border:1px solid var(--line);background:var(--panel);color:var(--ink);text-align:center}
-.lang{display:inline-flex;border:1px solid var(--line);border-radius:999px;overflow:hidden;flex:none}
-.lang button{border:0;border-radius:0;padding:6px 14px;font-size:14px;font-weight:700;color:var(--muted)}
-.lang button[aria-pressed="true"]{background:var(--ink);color:#0a1712}
 .silk{width:30px;height:30px;border-radius:7px;display:grid;place-items:center;font-family:var(--display);font-weight:700;color:#0a1712;font-size:17px;flex:none}
 .muted{color:var(--muted)}
 .err{color:var(--bad);font-size:14px;min-height:1.2em;margin:0}
 
+/* 英文：預設放在中文下面的細字；部分位置改為同一行 */
+.en{display:block;font-family:var(--body);font-size:.6em;font-weight:600;letter-spacing:0;opacity:.78;line-height:1.3;margin-top:2px}
+.text .en,.err .en,.hint .en,.lobby-hint .en,.call-text .en{font-size:.8em}
+.chip .en,.lane-sub .en,.place-tag .en,.res-time .en,.status .en,.stats .en,.tcard-head .en,.lobby-total .en,.meta .en{display:inline;margin-left:.35em;font-size:.82em}
+.lane-sub .en{display:block;margin-left:0}
+.tcard-names .en{display:inline;font-size:.95em;margin-left:.35em}
+.muted .en,.side h2 .en,.scan-big .en,.mvp-box h2 .en{font-size:.8em}
+
 /* ===== 手機 ===== */
 .phone-shell{min-height:100vh;min-height:100dvh;display:flex;flex-direction:column;
-  padding:max(10px,env(safe-area-inset-top,0px)) max(18px,env(safe-area-inset-right,0px)) max(28px,env(safe-area-inset-bottom,0px)) max(18px,env(safe-area-inset-left,0px));
+  padding:max(18px,env(safe-area-inset-top,0px)) max(18px,env(safe-area-inset-right,0px)) max(28px,env(safe-area-inset-bottom,0px)) max(18px,env(safe-area-inset-left,0px));
   -webkit-user-select:none;user-select:none;-webkit-touch-callout:none;overscroll-behavior:none;touch-action:manipulation}
-.phone-top{display:flex;justify-content:flex-end;padding-bottom:8px}
 .app{flex:1;display:flex;flex-direction:column;gap:14px;text-align:center;max-width:460px;width:100%;margin:0 auto}
 .app input{-webkit-user-select:text;user-select:text}
 .title{font-family:var(--display);font-weight:700;font-size:34px;color:var(--gold);margin:0;line-height:1.2}
+.title .en{font-family:var(--display);font-size:.55em;letter-spacing:.06em}
 .text{color:var(--muted);font-size:15px;margin:0}
 .tables{display:grid;grid-template-columns:1fr 1fr;gap:12px}
-.tables button{padding:20px 0;font-size:19px}
-.me{display:flex;align-items:center;justify-content:center;gap:10px;font-weight:900;font-size:19px}
-.big{font-family:var(--display);font-size:84px;font-weight:700;line-height:1.05;color:var(--gold)}
+.tables button{padding:16px 0;font-size:19px}
+.tables button:last-child:nth-child(odd){grid-column:1/-1}
+.me{display:flex;align-items:center;justify-content:center;gap:10px;font-weight:900;font-size:19px;text-align:left}
+.big{font-family:var(--display);font-size:80px;font-weight:700;line-height:1.05;color:var(--gold)}
+.big .en{font-family:var(--display);font-size:.42em;letter-spacing:.04em}
 .grow{flex:1;display:flex;flex-direction:column;justify-content:center;gap:12px}
 .tap{flex:1;min-height:300px;border:0;border-radius:28px;color:#0a1712;font-family:var(--display);font-size:68px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:4px;touch-action:none;transition:transform .05s}
-.tap small{font-family:var(--body);font-size:16px;font-weight:700;opacity:.8}
+.tap .en{font-family:var(--display);font-size:.5em;opacity:.85}
+.tap small{font-family:var(--body);font-size:16px;font-weight:700;opacity:.8;margin-top:6px}
+.tap small .en{font-size:.9em;font-family:var(--body)}
 .tap.hit{transform:scale(.96)}
-.stats{display:flex;justify-content:space-between;align-items:baseline;font-variant-numeric:tabular-nums;gap:8px}
+.stats{display:flex;justify-content:space-between;align-items:baseline;font-variant-numeric:tabular-nums;gap:8px;text-align:left;font-size:14px}
 .stats b{font-family:var(--display);font-size:28px}
 .bar{height:12px;border-radius:6px;background:var(--line);overflow:hidden}
 .bar i{display:block;height:100%;width:0;transition:width .15s linear}
@@ -66,25 +76,45 @@ input,select{font:inherit;font-size:17px;width:100%;padding:13px;border-radius:1
 /* ===== 電視 ===== */
 .tv{padding:20px max(20px,env(safe-area-inset-left,0px))}
 .tv-wrap{max-width:1600px;margin:0 auto;display:grid;grid-template-columns:minmax(0,1fr) 300px;gap:24px;align-items:start}
+.tv-wrap.lobby-mode{grid-template-columns:minmax(0,1fr)}
 @media (max-width:1000px){.tv-wrap{grid-template-columns:minmax(0,1fr)}}
 .tv-main{display:flex;flex-direction:column;gap:16px;min-width:0}
 .tv-head{display:flex;justify-content:space-between;align-items:flex-end;gap:16px;flex-wrap:wrap}
 .tv h1{font-family:var(--display);font-weight:700;font-size:clamp(32px,4vw,56px);line-height:1;margin:0}
+.tv h1 .en{font-family:var(--display);font-size:.45em;letter-spacing:.06em;color:var(--gold);opacity:1;margin-top:6px}
 .sub{color:var(--muted);font-size:15px;margin-top:6px}
 .meta{display:flex;gap:12px;align-items:center;flex-wrap:wrap}
 .chip{font-size:15px;padding:6px 14px;border-radius:999px;border:1px solid var(--line);color:var(--muted)}
 .chip[data-phase="race"]{color:#0a1712;background:var(--gold);border-color:var(--gold);font-weight:700}
 .chip[data-phase="done"]{color:var(--ink);border-color:var(--ink)}
 .clock{font-family:var(--display);font-size:32px;font-variant-numeric:tabular-nums;min-width:6ch;text-align:right}
+
+/* 等人入場大廳 */
+.lobby{display:grid;grid-template-columns:minmax(240px,440px) minmax(0,1fr);gap:28px;background:var(--panel);border:1px solid var(--line);border-radius:16px;padding:24px;align-items:start}
+@media (max-width:820px){.lobby{grid-template-columns:minmax(0,1fr)}}
+.lobby-qr{display:flex;flex-direction:column;gap:10px;align-items:center;text-align:center}
+.lobby-qr .qr{max-width:440px}
+.scan-big{font-size:clamp(20px,2.2vw,28px);font-weight:900;line-height:1.25}
+.lobby-right{display:flex;flex-direction:column;gap:16px;min-width:0}
+.lobby-total{display:flex;align-items:baseline;gap:12px;font-size:20px;font-weight:700;flex-wrap:wrap}
+.lobby-total .big-n{font-size:clamp(56px,7vw,96px)}
+.tcards{display:grid;grid-template-columns:repeat(auto-fill,minmax(190px,1fr));gap:12px}
+.tcard{border:2px solid var(--line);border-radius:12px;padding:12px 14px;display:flex;flex-direction:column;gap:8px;min-height:120px;min-width:0}
+.tcard-head{display:flex;justify-content:space-between;align-items:flex-start;gap:8px;font-weight:900;font-size:18px;line-height:1.25}
+.tcard-n{font-family:var(--display);font-size:34px;line-height:1;font-variant-numeric:tabular-nums}
+.tcard-names{font-size:14px;color:var(--muted);display:flex;flex-wrap:wrap;gap:2px 10px;min-width:0;overflow-wrap:anywhere}
+.lobby-hint{font-size:clamp(17px,1.7vw,22px);color:var(--ink);margin:0;font-weight:700}
+.btn-start-big{font-size:22px;padding:16px 28px}
+
 .board{background:var(--panel);border:1px solid var(--line);border-radius:16px;padding:18px;display:flex;flex-direction:column;gap:14px;position:relative;overflow:hidden}
 .track{display:flex;flex-direction:column;background:repeating-linear-gradient(90deg,var(--turf) 0 70px,var(--turf-2) 70px 140px);border-radius:10px;padding:8px 0;border-top:4px solid var(--rail);border-bottom:4px solid var(--rail)}
-.lane{display:grid;grid-template-columns:170px minmax(0,1fr);align-items:center;min-height:clamp(60px,9vh,96px);border-bottom:1px dashed rgba(241,236,220,.2)}
+.lane{display:grid;grid-template-columns:190px minmax(0,1fr);align-items:center;min-height:clamp(64px,10vh,100px);border-bottom:1px dashed rgba(241,236,220,.2)}
 .lane:last-child{border-bottom:0}
 .lane.empty{opacity:.4}
 .lane-label{display:flex;align-items:center;gap:10px;padding-left:12px;min-width:0}
 .lane .silk{width:36px;height:36px;font-size:20px;border-radius:8px}
 .lane-name{font-weight:900;font-size:18px;line-height:1.2}
-.lane-sub{font-size:13px;color:var(--muted);font-variant-numeric:tabular-nums}
+.lane-sub{font-size:13px;color:var(--muted);font-variant-numeric:tabular-nums;line-height:1.3}
 .run{position:relative;height:100%;min-height:58px;margin-right:16px}
 .finish{position:absolute;top:-8px;bottom:-8px;right:0;width:12px;background:repeating-linear-gradient(0deg,var(--rail) 0 9px,#0a1712 9px 18px)}
 .horse{position:absolute;top:50%;left:0;width:64px;height:64px;margin-top:-32px;font-size:50px;line-height:64px;text-align:center;will-change:transform;transition:transform .1s linear}
@@ -93,26 +123,30 @@ input,select{font:inherit;font-size:17px;width:100%;padding:13px;border-radius:1
 @keyframes bob{from{transform:scaleX(-1) translateY(0) rotate(0)}to{transform:scaleX(-1) translateY(-6px) rotate(-4deg)}}
 .trail{position:absolute;top:50%;left:0;height:5px;margin-top:-2.5px;border-radius:3px;opacity:.55;transition:width .1s linear}
 .place-tag{position:absolute;top:4px;right:22px;font-family:var(--display);font-size:16px;font-weight:700;padding:2px 10px;border-radius:4px;background:var(--rail);color:#0a1712}
-.overlay{position:absolute;inset:0;display:grid;place-items:center;background:rgba(10,23,18,.75);font-family:var(--display);font-weight:700;font-size:clamp(90px,16vw,220px);color:var(--gold);pointer-events:none;text-align:center}
+.overlay{position:absolute;inset:0;display:grid;place-items:center;background:rgba(10,23,18,.75);font-family:var(--display);font-weight:700;font-size:clamp(90px,16vw,220px);color:var(--gold);pointer-events:none;text-align:center;line-height:1}
+.overlay .en{font-family:var(--display);font-size:.45em;opacity:1}
 .call{display:flex;gap:14px;align-items:baseline;border-top:1px solid var(--line);padding-top:12px;min-height:52px}
 .call-label{font-size:13px;letter-spacing:.12em;color:var(--gold);flex:none;text-transform:uppercase}
-.call-text{font-size:clamp(20px,2.6vw,30px);font-weight:900;min-width:0}
+.call-label .en{font-size:.85em}
+.call-text{font-size:clamp(20px,2.4vw,30px);font-weight:900;min-width:0;line-height:1.3}
 .controls{display:flex;gap:10px;flex-wrap:wrap;align-items:center}
 .controls button{border-width:1px;font-weight:700}
+.controls button .en{font-size:.72em}
 .hint{color:var(--muted);font-size:14px}
 .results{display:grid;grid-template-columns:repeat(auto-fit,minmax(170px,1fr));gap:12px}
 .res{border:1px solid var(--line);border-radius:12px;padding:14px;display:flex;flex-direction:column;gap:4px}
 .res.first{border-color:var(--gold);background:rgba(233,183,47,.08)}
 .res-rank{font-family:var(--display);font-size:34px;font-weight:700;line-height:1}
+.res-rank .en{font-family:var(--display)}
 .res.first .res-rank{color:var(--gold)}
-.res-name{font-weight:900;font-size:18px}
+.res-name{font-weight:900;font-size:18px;line-height:1.25}
 .res-time{font-size:14px;color:var(--muted);font-variant-numeric:tabular-nums}
 .mvp-box{background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:14px 16px}
-.mvp-box h2{font-size:15px;letter-spacing:.1em;color:var(--gold);margin:0 0 8px;font-weight:700}
+.mvp-box h2{font-size:16px;letter-spacing:.06em;color:var(--gold);margin:0 0 8px;font-weight:700}
 .mvp-box ol{margin:0;padding-left:22px;display:grid;gap:4px;font-size:18px}
 .mvp-box .n{font-family:var(--display);font-variant-numeric:tabular-nums;color:var(--muted);margin-left:8px}
 .side{background:var(--panel);border:1px solid var(--line);border-radius:16px;padding:20px;display:flex;flex-direction:column;gap:10px;align-items:center;text-align:center;position:sticky;top:20px}
-.side h2{margin:0;font-size:22px;font-weight:900}
+.side h2{margin:0;font-size:22px;font-weight:900;line-height:1.25}
 .qr{background:#fff;padding:12px;border-radius:12px;width:100%;max-width:260px;aspect-ratio:1;display:grid;place-items:center;color:#0a1712}
 .qr svg{width:100%;height:100%;display:block}
 .room-code{font-family:var(--display);font-size:44px;font-weight:700;letter-spacing:.18em;line-height:1}
@@ -125,23 +159,37 @@ input,select{font:inherit;font-size:17px;width:100%;padding:13px;border-radius:1
 
 <!-- 手機／入口 -->
 <div class="phone-shell" id="phoneShell">
-  <div class="phone-top"><div class="lang" role="group" aria-label="Language"><button data-lang="zh">中文</button><button data-lang="en">English</button></div></div>
   <main class="app" id="app"></main>
   <div class="status" id="status"></div>
 </div>
 
 <!-- 電視 -->
 <div class="tv" id="tv" hidden>
-  <div class="tv-wrap">
+  <div class="tv-wrap" id="tvWrap">
     <section class="tv-main">
       <div class="tv-head">
         <div><h1 data-i18n="title"></h1><div class="sub" id="raceName"></div></div>
         <div class="meta">
-          <div class="lang" role="group" aria-label="Language"><button data-lang="zh">中文</button><button data-lang="en">English</button></div>
           <span class="chip" id="phaseChip" data-phase="idle"></span>
           <span class="clock" id="clock"></span>
         </div>
       </div>
+
+      <div class="lobby" id="lobby">
+        <div class="lobby-qr">
+          <div class="scan-big" data-i18n="scanBig"></div>
+          <div class="qr" id="qrBig"></div>
+          <div class="muted" data-i18n="roomCode"></div>
+          <div class="room-code" id="roomCodeBig"></div>
+          <div class="url" id="joinUrlBig"></div>
+        </div>
+        <div class="lobby-right">
+          <div class="lobby-total"><span class="big-n" id="totalBig">0</span><span data-i18n="joined"></span></div>
+          <div class="tcards" id="tcards"></div>
+          <p class="lobby-hint" data-i18n="lobbyHint"></p>
+        </div>
+      </div>
+
       <div class="board" id="board">
         <div class="track" id="track"></div>
         <div class="call"><span class="call-label" data-i18n="callLabel"></span><span class="call-text" id="call"></span></div>
@@ -157,7 +205,7 @@ input,select{font:inherit;font-size:17px;width:100%;padding:13px;border-radius:1
       <div class="results" id="results" hidden></div>
       <div class="mvp-box" id="mvp" hidden><h2 data-i18n="mvpTitle"></h2><ol id="mvpList"></ol></div>
     </section>
-    <aside class="side">
+    <aside class="side" id="side">
       <h2 data-i18n="scan"></h2>
       <div class="qr" id="qr"></div>
       <div class="muted" data-i18n="roomCode"></div>
@@ -175,110 +223,113 @@ input,select{font:inherit;font-size:17px;width:100%;padding:13px;border-radius:1
 <script>
 (() => {
   // =====================================================================
-  //  共用設定與文字
+  //  共用設定
   // =====================================================================
   const PREFIX = 'tapderby-tw-';
+  const DEFAULT_TABLES = 5; // 預計 40–50 人，預設 5 張枱
   const COLORS = ['#e5484d','#f0c53c','#3d8df5','#c46cf0','#2fbf71','#ff8a3d','#4dd0e1','#f06292'];
   const RACE_SECONDS = 20, AVG_TAPS = 6.5, STEP = 100 / (AVG_TAPS * RACE_SECONDS);
   const MAX_TAPS_PER_SEC = 16, COUNTDOWN_MS = 3000, RACE_TIMEOUT_MS = 90000, MAX_PLAYERS = 120;
 
-  const I18N = {
-    zh: {
-      title:'搖搖賽馬', table:i=>`第 ${i+1} 枱`,
-      // 入口
-      landIntro:'全場分枱比賽：用手機狂按，替自己那枱的馬加速！', hostTitle:'我是主持人', tableCount:n=>`${n} 張枱`,
-      hostBtn:'在電視開房', or:'或', joinCodePh:'房間代碼', joinBtn:'加入比賽', needCode:'請輸入電視上的 4 碼房間代碼。',
-      noPeer:'連線元件載入失敗，請確認網絡後重新整理。', opening:'開房中…', openFail:t=>`開房失敗（${t}），請再試一次。`,
-      // 手機
-      connecting:'連線中…', notFound:'找不到這個房間，請確認電視上的代碼。', connFail:'連唔到房間，請確認網絡後再試。', retry:'再試一次',
-      joinIntro:'輸入你的名字（可以唔填），<br>再揀你坐緊嗰張枱。', namePh:'你的名字或花名',
-      joinedCount:n=>`已有 ${n} 人加入`, ready:'準備',
-      waitText:'等主持人開始比賽。<br>開跑之後，用手指狂按個大掣！<br>可以用兩隻手指輪流按。',
-      totalNow:n=>`全場已有 <b id="tot">${n}</b> 人`, change:'轉枱',
-      countText:'準備好手指！', go:'開跑！', tap:'按！', tapSub:'愈快愈好',
-      myTaps:n=>`你按咗 <b id="myTaps">${n}</b> 下`, crossed:'已衝線！', nowPlace:k=>`暫時第 ${k}`,
-      place:['冠軍','亞軍','季軍','第四','第五','第六','第七','第八'], finished:'完場',
-      tableTime:t=>`你張枱用咗 ${t} 秒衝線`, tableDnf:'你張枱未到終點', youTapped:n=>`你一個人按咗 ${n} 下`,
-      mvp:k=>`你係全場第 ${k} 快手指！`, winMsg:'恭喜！快啲同枱友擊掌！', nextMsg:'等主持人開下一場，再嚟過！',
-      errBusy:'比賽進行中，完場後先可以轉枱', errFull:'房間已滿。', reconnect:'連線不穩，重新連線中…',
-      // 電視
-      raceName:n=>`第 ${n} 場 · 尾牙盃`, callLabel:'現場評述',
-      phase:{idle:'等待開跑',count:'準備',race:'比賽中',done:'完場'}, sec:'秒',
-      start:'開始比賽', again:'再跑一場', stop:'提早完場', reset:'重設', fullscreen:'全螢幕',
-      hintIdle:'按「開始比賽」後會倒數 3 秒。請保持這個頁面開啟，電視就是房主。', hintNoPlayers:'未有人加入，請大家先掃 QR Code。',
-      scan:'掃描加入比賽', roomCode:'房間代碼', joined:'人已加入',
-      tvOk:'房間已開放', tvBad:'與配對伺服器斷線，重新連線中…（已連上的手機不受影響）',
-      players:n=>`${n} 人`, rate:(n,r)=>`${n} 人 · 每人 ${r} 下/秒`,
-      time:(t,d)=>`${t} 秒${d?` · 慢 ${d} 秒`:''}`, dnf:p=>`未到終點 · 跑咗 ${p}%`,
-      mvpTitle:'全場最快手指', anon:'無名英雄', taps:n=>`${n} 下`,
-      say:{
-        idle:'各位同事，請掃 QR Code 揀返自己張枱！', count:'準備……大家拎起手機！', go:'閘門打開！一齊衝出！',
-        win:a=>`${a}衝線！恭喜奪得冠軍！`, done:a=>`完場！冠軍係${a}，請派代表上台領獎！`,
-        early:(a,b)=>[`${a}起步最快，${b}緊貼其後！`,'鬥得好激烈，大家用力按呀！'],
-        close:(a,b)=>[`${a}同${b}頭馬頸位，差距不到半個馬位！`,`${b}追緊上嚟喇！`],
-        lead:(a,g,z)=>[`${a}拋離對手，領先 ${g} 個身位！`,`${z}仲有機會，唔好放棄！`],
-        straightClose:(a,b)=>`入直路喇！${a}同${b}鬥到最後！`, straight:a=>`入直路喇！${a}一馬當先！`,
-      },
-    },
-    en: {
-      title:'Tap Derby', table:i=>`Table ${i+1}`,
-      landIntro:'Tables race each other. Tap your phone as fast as you can to speed up your table\'s horse!', hostTitle:'I\'m the host', tableCount:n=>`${n} tables`,
-      hostBtn:'Host on TV', or:'or', joinCodePh:'Room code', joinBtn:'Join the race', needCode:'Enter the 4-character room code on the TV.',
-      noPeer:'Could not load multiplayer. Check your connection and refresh.', opening:'Opening the room…', openFail:t=>`Could not open a room (${t}). Please try again.`,
-      connecting:'Connecting…', notFound:'No room with that code. Check the TV.', connFail:'Could not reach the room. Check your connection and try again.', retry:'Try again',
-      joinIntro:'Enter your name (optional),<br>then pick the table you\'re sitting at.', namePh:'Your name or nickname',
-      joinedCount:n=>`${n} ${n===1?'player has':'players have'} joined`, ready:'Ready',
-      waitText:'Waiting for the host to start.<br>When the race begins, tap the big button as fast as you can!<br>Try alternating two fingers.',
-      totalNow:n=>`Players in the room: <b id="tot">${n}</b>`, change:'Change table',
-      countText:'Fingers ready!', go:'GO!', tap:'TAP!', tapSub:'Faster is better',
-      myTaps:n=>`You tapped <b id="myTaps">${n}</b> times`, crossed:'Finished!', nowPlace:k=>`Now ${['1st','2nd','3rd'][k-1]||k+'th'}`,
-      place:['1st','2nd','3rd','4th','5th','6th','7th','8th'], finished:'Done',
-      tableTime:t=>`Your table finished in ${t}s`, tableDnf:'Your table did not finish', youTapped:n=>`You tapped ${n} times`,
-      mvp:k=>`You're #${k} fastest fingers in the room!`, winMsg:'Congratulations! High-five your table!', nextMsg:'Wait for the next race and try again!',
-      errBusy:'A race is running. You can change tables after it ends.', errFull:'This room is full.', reconnect:'Connection unstable. Reconnecting…',
-      raceName:n=>`Race ${n} · Year-End Cup`, callLabel:'Live call',
-      phase:{idle:'Waiting',count:'Get ready',race:'Racing',done:'Finished'}, sec:'s',
-      start:'Start race', again:'Run again', stop:'End race now', reset:'Reset', fullscreen:'Full screen',
-      hintIdle:'The race starts after a 3-second countdown. Keep this page open: the TV hosts the room.', hintNoPlayers:'Nobody has joined yet. Ask everyone to scan the QR code.',
-      scan:'Scan to join', roomCode:'Room code', joined:'players joined',
-      tvOk:'Room is open', tvBad:'Lost the matchmaking server. Reconnecting… (phones already connected keep playing)',
-      players:n=>`${n} ${n===1?'player':'players'}`, rate:(n,r)=>`${n} players · ${r} taps/s each`,
-      time:(t,d)=>`${t}s${d?` · +${d}s`:''}`, dnf:p=>`Did not finish · ${p}%`,
-      mvpTitle:'Fastest fingers', anon:'Mystery tapper', taps:n=>`${n} taps`,
-      say:{
-        idle:'Scan the QR code and pick your table!', count:'Get ready… phones in hand!', go:'And they\'re off!',
-        win:a=>`${a} crosses the line! ${a} wins!`, done:a=>`That's the race! ${a} takes the cup. Send someone up to collect the prize!`,
-        early:(a,b)=>[`${a} gets the best start, ${b} right behind!`,'What a battle. Keep tapping!'],
-        close:(a,b)=>[`${a} and ${b} neck and neck!`,`${b} is closing in!`],
-        lead:(a,g,z)=>[`${a} pulls away, ${g} lengths clear!`,`${z} is still in this. Don't give up!`],
-        straightClose:(a,b)=>`Into the home straight! ${a} and ${b} fighting to the line!`, straight:a=>`Into the home straight! ${a} out in front!`,
-      },
+  // =====================================================================
+  //  文字：中英文各寫一份，再自動合併成「中文＋英文細字」
+  // =====================================================================
+  const ZH = {
+    table:i=>`第 ${i+1} 枱`,
+    landIntro:'全場分枱比賽：用手機狂按，替自己那枱的馬加速！', hostTitle:'我是主持人',
+    hostBtn:'在電視開房', or:'或', joinBtn:'加入比賽', needCode:'請輸入電視上的 4 碼房間代碼。',
+    noPeer:'連線元件載入失敗，請確認網絡後重新整理。', opening:'開房中…', openFail:t=>`開房失敗（${t}），請再試一次。`,
+    connecting:'連線中…', notFound:'找不到這個房間，請確認電視上的代碼。', connFail:'連唔到房間，請確認網絡後再試。', retry:'再試一次',
+    joinIntro:'輸入你的名字（可以唔填），再揀你坐緊嗰張枱。',
+    joinedCount:n=>`已有 ${n} 人加入`, ready:'準備',
+    waitText:'等主持人人齊後開始比賽。開跑之後，用手指狂按個大掣！可以用兩隻手指輪流按。',
+    totalNow:n=>`全場已有 <b class="tot">${n}</b> 人`, change:'轉枱',
+    countText:'準備好手指！', go:'開跑！', tap:'按！', tapSub:'愈快愈好',
+    myTaps:n=>`你按咗 <b class="myTaps">${n}</b> 下`, crossed:'已衝線！', nowPlace:k=>`暫時第 ${k}`,
+    place:['冠軍','亞軍','季軍','第四','第五','第六','第七','第八'], finished:'完場',
+    tableTime:t=>`你張枱用咗 ${t} 秒衝線`, tableDnf:'你張枱未到終點', youTapped:n=>`你一個人按咗 ${n} 下`,
+    mvp:k=>`你係全場第 ${k} 快手指！`, winMsg:'恭喜！快啲同枱友擊掌！', nextMsg:'等主持人開下一場，再嚟過！',
+    errBusy:'比賽進行中，完場後先可以轉枱。', errFull:'房間已滿。', reconnect:'連線不穩，重新連線中…',
+    raceName:n=>`第 ${n} 場 · 尾牙盃`, callLabel:'現場評述',
+    phase:{idle:'等人入場',count:'準備',race:'比賽中',done:'完場'},
+    start:'開始比賽', again:'再跑一場', stop:'提早完場', reset:'重設', fullscreen:'全螢幕',
+    hintIdle:'人齊後按「開始比賽」，倒數 3 秒一齊開跑。請保持這個頁面開啟，電視就是房主。', hintNoPlayers:'未有人加入，請大家先掃 QR Code。',
+    scan:'遲到？掃描加入', scanBig:'用手機掃描，揀自己張枱', roomCode:'房間代碼', joined:'人已加入',
+    lobbyHint:'等齊人之後，主持人按「開始比賽」，全場一齊開跑！',
+    tvOk:'房間已開放', tvBad:'與配對伺服器斷線，重新連線中…（已連上的手機不受影響）',
+    players:n=>`${n} 人`, rate:(n,r)=>`${n} 人 · 每人 ${r} 下/秒`,
+    time:(t,d)=>`${t} 秒${d?` · 慢 ${d} 秒`:''}`, dnf:p=>`未到終點 · 跑咗 ${p}%`,
+    mvpTitle:'全場最快手指', anon:'無名英雄', taps:n=>`${n} 下`, waiting:'等緊同事入枱…',
+    say:{
+      idle:'各位同事，請掃 QR Code 揀返自己張枱！', count:'準備……大家拎起手機！', go:'閘門打開！一齊衝出！',
+      win:a=>`${a}衝線！恭喜奪得冠軍！`, done:a=>`完場！冠軍係${a}，請派代表上台領獎！`,
+      early:(a,b)=>[`${a}起步最快，${b}緊貼其後！`,'鬥得好激烈，大家用力按呀！'],
+      close:(a,b)=>[`${a}同${b}頭馬頸位，差距不到半個馬位！`,`${b}追緊上嚟喇！`],
+      lead:(a,g,z)=>[`${a}拋離對手，領先 ${g} 個身位！`,`${z}仲有機會，唔好放棄！`],
+      straightClose:(a,b)=>`入直路喇！${a}同${b}鬥到最後！`, straight:a=>`入直路喇！${a}一馬當先！`,
     },
   };
+  const EN = {
+    table:i=>`Table ${i+1}`,
+    landIntro:'Tables race each other. Tap your phone as fast as you can to speed up your table\'s horse!', hostTitle:'I\'m the host',
+    hostBtn:'Host on TV', or:'or', joinBtn:'Join the race', needCode:'Enter the 4-character room code on the TV.',
+    noPeer:'Could not load multiplayer. Check your connection and refresh.', opening:'Opening the room…', openFail:t=>`Could not open a room (${t}). Please try again.`,
+    connecting:'Connecting…', notFound:'No room with that code. Check the TV.', connFail:'Could not reach the room. Check your connection and try again.', retry:'Try again',
+    joinIntro:'Enter your name (optional), then pick the table you\'re sitting at.',
+    joinedCount:n=>`${n} joined`, ready:'Ready',
+    waitText:'The host starts the race when everyone is in. Then tap the big button as fast as you can! Try alternating two fingers.',
+    totalNow:n=>`Players in the room: <b class="tot">${n}</b>`, change:'Change table',
+    countText:'Fingers ready!', go:'GO!', tap:'TAP!', tapSub:'Faster is better',
+    myTaps:n=>`You tapped <b class="myTaps">${n}</b> times`, crossed:'Finished!', nowPlace:k=>`Now ${['1st','2nd','3rd'][k-1]||k+'th'}`,
+    place:['1st','2nd','3rd','4th','5th','6th','7th','8th'], finished:'Done',
+    tableTime:t=>`Your table finished in ${t}s`, tableDnf:'Your table did not finish', youTapped:n=>`You tapped ${n} times`,
+    mvp:k=>`You're #${k} fastest fingers in the room!`, winMsg:'Congratulations! High-five your table!', nextMsg:'Wait for the next race and try again!',
+    errBusy:'A race is running. You can change tables after it ends.', errFull:'This room is full.', reconnect:'Connection unstable. Reconnecting…',
+    raceName:n=>`Race ${n} · Year-End Cup`, callLabel:'Live call',
+    phase:{idle:'Lobby',count:'Get ready',race:'Racing',done:'Finished'},
+    start:'Start race', again:'Run again', stop:'End race now', reset:'Reset', fullscreen:'Full screen',
+    hintIdle:'When everyone is in, tap Start. A 3-second countdown starts the race. Keep this page open: the TV hosts the room.', hintNoPlayers:'Nobody has joined yet. Ask everyone to scan the QR code.',
+    scan:'Late? Scan to join', scanBig:'Scan with your phone and pick your table', roomCode:'Room code', joined:'players joined',
+    lobbyHint:'Once everyone is in, the host taps Start and the whole room races together!',
+    tvOk:'Room is open', tvBad:'Lost the matchmaking server. Reconnecting… (phones already connected keep playing)',
+    players:n=>`${n} ${n===1?'player':'players'}`, rate:(n,r)=>`${n} players · ${r} taps/s each`,
+    time:(t,d)=>`${t}s${d?` · +${d}s`:''}`, dnf:p=>`Did not finish · ${p}%`,
+    mvpTitle:'Fastest fingers', anon:'Mystery tapper', taps:n=>`${n} taps`, waiting:'Waiting for players…',
+    say:{
+      idle:'Scan the QR code and pick your table!', count:'Get ready… phones in hand!', go:'And they\'re off!',
+      win:a=>`${a} crosses the line! ${a} wins!`, done:a=>`That's the race! ${a} takes the cup!`,
+      early:(a,b)=>[`${a} gets the best start, ${b} right behind!`,'What a battle. Keep tapping!'],
+      close:(a,b)=>[`${a} and ${b} neck and neck!`,`${b} is closing in!`],
+      lead:(a,g,z)=>[`${a} pulls away, ${g} lengths clear!`,`${z} is still in this. Don't give up!`],
+      straightClose:(a,b)=>`Into the home straight! ${a} and ${b} fighting to the line!`, straight:a=>`Into the home straight! ${a} out in front!`,
+    },
+  };
+  // 參數可以是 {zh, en}（例如枱名），合併時各自代入對應語言
+  const pick = (x, k) => (x && typeof x === 'object' && 'zh' in x) ? x[k] : x;
+  function both(z, e) {
+    if (typeof z === 'function') return (...a) => both(z(...a.map(x => pick(x, 'zh'))), e(...a.map(x => pick(x, 'en'))));
+    if (Array.isArray(z)) return z.map((v, i) => both(v, e[i]));
+    if (z && typeof z === 'object') { const o = {}; for (const k in z) o[k] = both(z[k], e[k]); return o; }
+    if (z === e) return String(z);
+    return `${z}<span class="en">${e}</span>`;
+  }
+  const T = both(ZH, EN);
+  T.title = '搖搖賽馬<span class="en">TAP DERBY</span>';
+  T.sec = '秒';
+  const tn = i => ({ zh: ZH.table(i), en: EN.table(i) }); // 枱名（兩種語言）
+  const H = x => (x && typeof x === 'object') ? `${x.zh}<span class="en">${x.en}</span>` : String(x);
 
   const $ = id => document.getElementById(id);
   const store = { get(k){try{return localStorage.getItem(k)}catch(e){return null}}, set(k,v){try{localStorage.setItem(k,v)}catch(e){}} };
   const esc = s => String(s).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
   const qs = new URLSearchParams(location.search);
-  let lang = qs.get('lang') || store.get('derby-lang') || (/^zh/i.test(navigator.language) ? 'zh' : 'en');
-  if (!I18N[lang]) lang = 'zh';
-  const L = () => I18N[lang];
   const cleanCode = s => String(s || '').toUpperCase().replace(/[^A-Z0-9]/g, '').slice(0, 4);
   const randCode = () => { const A = 'ABCDEFGHJKMNPQRSTUVWXYZ23456789'; let s = ''; for (let i = 0; i < 4; i++) s += A[Math.floor(Math.random() * A.length)]; return s; };
   const baseUrl = () => location.origin + location.pathname.replace(/index\.html$/, '');
 
   let cid = store.get('derby-cid');
   if (!cid || !/^[a-z0-9]{6,20}$/.test(cid)) { cid = Math.random().toString(36).slice(2, 12); store.set('derby-cid', cid); }
-
-  const langListeners = [];
-  function setLang(l) { lang = l; store.set('derby-lang', l); applyLangButtons(); langListeners.forEach(f => f()); }
-  function applyLangButtons() {
-    document.documentElement.lang = lang === 'zh' ? 'zh-Hant' : 'en';
-    document.querySelectorAll('[data-lang]').forEach(b => b.setAttribute('aria-pressed', String(b.dataset.lang === lang)));
-    document.querySelectorAll('[data-i18n]').forEach(el => { el.textContent = L()[el.dataset.i18n]; });
-  }
-  document.querySelectorAll('[data-lang]').forEach(b => b.addEventListener('click', () => setLang(b.dataset.lang)));
-  applyLangButtons();
+  document.querySelectorAll('[data-i18n]').forEach(el => { el.innerHTML = T[el.dataset.i18n]; });
 
   const hasPeer = typeof Peer !== 'undefined';
   const app = $('app'), statusEl = $('status');
@@ -288,25 +339,24 @@ input,select{font:inherit;font-size:17px;width:100%;padding:13px;border-radius:1
   // =====================================================================
   let landingMsg = '';
   function renderLanding() {
-    const tc = Number(store.get('derby-tables')) || 4;
-    app.innerHTML = `<p class="title">${L().title}</p>
-      <p class="text">${L().landIntro}</p>
-      <input id="code" class="code-input" maxlength="4" autocomplete="off" autocapitalize="characters">
-      <button class="btn-go" id="joinBtn">${L().joinBtn}</button>
-      <div class="divider">${L().or}</div>
-      <p class="text" style="font-weight:700;color:var(--ink)">${L().hostTitle}</p>
+    const tc = Number(store.get('derby-table-count')) || DEFAULT_TABLES;
+    app.innerHTML = `<p class="title">${T.title}</p>
+      <p class="text">${T.landIntro}</p>
+      <input id="code" class="code-input" maxlength="4" autocomplete="off" autocapitalize="characters" placeholder="房間代碼 Room code">
+      <button class="btn-go" id="joinBtn">${T.joinBtn}</button>
+      <div class="divider">或 or</div>
+      <p class="text" style="font-weight:700;color:var(--ink)">${T.hostTitle}</p>
       <div class="row">
-        <select id="tableCount">${[2,3,4,5,6,7,8].map(n => `<option value="${n}"${n===tc?' selected':''}>${L().tableCount(n)}</option>`).join('')}</select>
-        <button id="hostBtn">${L().hostBtn}</button>
+        <select id="tableCount">${[2,3,4,5,6,7,8].map(n => `<option value="${n}"${n===tc?' selected':''}>${n} 張枱 · ${n} tables</option>`).join('')}</select>
+        <button id="hostBtn">${T.hostBtn}</button>
       </div>
-      <p class="err" id="landMsg">${esc(landingMsg || (hasPeer ? '' : L().noPeer))}</p>`;
-    $('code').placeholder = L().joinCodePh;
+      <p class="err" id="landMsg">${landingMsg || (hasPeer ? '' : T.noPeer)}</p>`;
     $('joinBtn').onclick = () => {
       const c = cleanCode($('code').value);
-      if (c.length < 4) { landingMsg = L().needCode; $('landMsg').textContent = landingMsg; $('code').focus(); return; }
+      if (c.length < 4) { landingMsg = T.needCode; $('landMsg').innerHTML = landingMsg; $('code').focus(); return; }
       location.search = '?room=' + c;
     };
-    $('hostBtn').onclick = () => startHost(Number($('tableCount').value) || 4);
+    $('hostBtn').onclick = () => startHost(Number($('tableCount').value) || DEFAULT_TABLES);
     if (!hasPeer) { $('joinBtn').disabled = true; $('hostBtn').disabled = true; }
   }
 
@@ -337,7 +387,7 @@ input,select{font:inherit;font-size:17px;width:100%;padding:13px;border-radius:1
     if (!peer) return;
     const c = peer.connect(PREFIX + roomCode.toLowerCase(), { reliable: true, metadata: { cid } });
     c.on('open', () => {
-      conn = c; everConnected = true; phoneErr = ''; statusEl.textContent = '';
+      conn = c; everConnected = true; phoneErr = ''; statusEl.innerHTML = '';
       if (onFirstOpen) { onFirstOpen(); onFirstOpen = null; }
       // 枱號優先次序：網址的 &t=枱號（每枱專屬 QR Code）＞ 上次在這個房間揀的枱
       const qt = Number(qs.get('t'));
@@ -350,7 +400,7 @@ input,select{font:inherit;font-size:17px;width:100%;padding:13px;border-radius:1
     c.on('data', onHostMsg);
     c.on('close', () => {
       if (conn !== c) return;
-      conn = null; statusEl.textContent = L().reconnect;
+      conn = null; statusEl.innerHTML = T.reconnect;
       clearTimeout(retryTimer); retryTimer = setTimeout(() => connectRoom(), 2500);
     });
     c.on('error', () => {});
@@ -373,35 +423,34 @@ input,select{font:inherit;font-size:17px;width:100%;padding:13px;border-radius:1
     pending++; localTaps++;
     if (navigator.vibrate) try { navigator.vibrate(8); } catch (_) {}
     const b = e.currentTarget; b.classList.remove('hit'); void b.offsetWidth; b.classList.add('hit');
-    const c = $('myTaps'); if (c) c.textContent = localTaps;
+    document.querySelectorAll('.myTaps').forEach(c => { c.textContent = localTaps; });
   }
 
-  const tnameP = i => (state && state.tables[i] && state.tables[i].name) || L().table(i);
-  const meHtml = t => `<div class="me"><span class="silk" style="background:${COLORS[t]}">${t + 1}</span>${esc(tnameP(t))}</div>`;
+  const meHtml = t => `<div class="me"><span class="silk" style="background:${COLORS[t]}">${t + 1}</span><span>${H(tn(t))}</span></div>`;
 
   function renderPhone() {
     if (phoneErr) {
-      app.innerHTML = `<p class="title">${L().title}</p><div class="grow"><p class="err" style="font-size:16px">${L()[phoneErr]}</p></div>
-        <button class="btn-go" id="retryBtn">${L().retry}</button>`;
+      app.innerHTML = `<p class="title">${T.title}</p><div class="grow"><p class="err" style="font-size:16px">${T[phoneErr]}</p></div>
+        <button class="btn-go" id="retryBtn">${T.retry}</button>`;
       $('retryBtn').onclick = () => location.reload();
       view = 'err'; return;
     }
-    if (!state) { if (view !== 'connecting') { app.innerHTML = `<p class="title">${L().title}</p><div class="grow"><p class="text">${L().connecting}</p></div>`; view = 'connecting'; } return; }
+    if (!state) { if (view !== 'connecting') { app.innerHTML = `<p class="title">${T.title}</p><div class="grow"><p class="text">${T.connecting}</p></div>`; view = 'connecting'; } return; }
     const s = state, my = s.me && s.me.table != null && wantTable != null ? s.me.table : null;
     if (s.phase === 'count') localTaps = 0;
     const v = my == null ? 'join' : s.phase;
-    const key = [v, my, v === 'count' ? s.countdown : '', v === 'done' ? s.no : '', joinErrKey, lang].join('|');
+    const key = [v, my, v === 'count' ? s.countdown : '', v === 'done' ? s.no : '', joinErrKey, s.tables.length].join('|');
     if (key === view) { livePhone(); return; }
     view = key;
 
     if (v === 'join') {
-      app.innerHTML = `<p class="title">${L().title}</p>
-        <p class="text">${L().joinIntro}</p>
-        <input id="name" maxlength="12" autocomplete="off">
-        <div class="tables">${s.tables.map((t, i) => `<button data-t="${i}" style="border-color:${COLORS[i]};color:${COLORS[i]}">${esc(tnameP(i))}</button>`).join('')}</div>
-        <p class="err">${joinErrKey ? L()[joinErrKey] : ''}</p>
-        <p class="text">${L().joinedCount(s.total)}</p>`;
-      const nameEl = $('name'); nameEl.placeholder = L().namePh; nameEl.value = myName;
+      app.innerHTML = `<p class="title">${T.title}</p>
+        <p class="text">${T.joinIntro}</p>
+        <input id="name" maxlength="12" autocomplete="off" placeholder="你的名字 Your name">
+        <div class="tables">${s.tables.map((t, i) => `<button data-t="${i}" style="border-color:${COLORS[i]};color:${COLORS[i]}">${H(tn(i))}</button>`).join('')}</div>
+        <p class="err">${joinErrKey ? T[joinErrKey] : ''}</p>
+        <p class="text">${T.joinedCount(s.total)}</p>`;
+      const nameEl = $('name'); nameEl.value = myName;
       nameEl.addEventListener('input', () => { myName = nameEl.value.trim().slice(0, 12); store.set('derby-name', myName); });
       app.querySelectorAll('[data-t]').forEach(b => b.addEventListener('click', () => {
         wantTable = +b.dataset.t; joinErrKey = ''; store.set('derby-table-' + roomCode, String(wantTable));
@@ -410,20 +459,20 @@ input,select{font:inherit;font-size:17px;width:100%;padding:13px;border-radius:1
       return;
     }
     if (v === 'idle') {
-      app.innerHTML = `${meHtml(my)}<div class="grow"><div class="big">${L().ready}</div><p class="text">${L().waitText}</p></div>
-        <p class="text">${L().totalNow(s.total)}</p><button class="ghost" id="change">${L().change}</button>`;
+      app.innerHTML = `${meHtml(my)}<div class="grow"><div class="big">${T.ready}</div><p class="text">${T.waitText}</p></div>
+        <p class="text">${T.totalNow(s.total)}</p><button class="ghost" id="change">${T.change}</button>`;
       $('change').onclick = () => { wantTable = null; joinErrKey = ''; view = ''; renderPhone(); };
       return;
     }
     if (v === 'count') {
-      app.innerHTML = `${meHtml(my)}<div class="grow"><div class="big">${s.countdown || L().go}</div><p class="text">${L().countText}</p></div>`;
+      app.innerHTML = `${meHtml(my)}<div class="grow"><div class="big">${s.countdown || T.go}</div><p class="text">${T.countText}</p></div>`;
       return;
     }
     if (v === 'race') {
       const c = COLORS[my];
       app.innerHTML = `${meHtml(my)}
-        <button class="tap" id="tapBtn" style="background:${c}">${L().tap}<small>${L().tapSub}</small></button>
-        <div class="stats"><span>${L().myTaps(localTaps)}</span><span id="place"></span></div>
+        <button class="tap" id="tapBtn" style="background:${c}"><span>${T.tap}</span><small>${T.tapSub}</small></button>
+        <div class="stats"><span>${T.myTaps(localTaps)}</span><span id="place"></span></div>
         <div class="bar"><i id="bar" style="background:${c}"></i></div>`;
       const b = $('tapBtn');
       b.addEventListener('pointerdown', hit);
@@ -433,23 +482,26 @@ input,select{font:inherit;font-size:17px;width:100%;padding:13px;border-radius:1
     if (v === 'done') {
       const k = s.ranking ? s.ranking.indexOf(my) : -1, t = s.tables[my], mvp = s.me.mvp;
       app.innerHTML = `${meHtml(my)}<div class="grow">
-        <div class="big">${k >= 0 ? L().place[k] : L().finished}</div>
-        <p class="text">${t && t.finish != null ? L().tableTime(t.finish.toFixed(2)) : L().tableDnf}<br>${L().youTapped(s.me.taps)}</p>
-        ${mvp >= 0 ? `<p class="text mvp">${L().mvp(mvp + 1)}</p>` : ''}
-        <p class="text">${k === 0 ? L().winMsg : L().nextMsg}</p></div>`;
+        <div class="big">${k >= 0 ? T.place[k] : T.finished}</div>
+        <p class="text">${t && t.finish != null ? T.tableTime(t.finish.toFixed(2)) : T.tableDnf}</p>
+        <p class="text">${T.youTapped(s.me.taps)}</p>
+        ${mvp >= 0 ? `<p class="text mvp">${T.mvp(mvp + 1)}</p>` : ''}
+        <p class="text">${k === 0 ? T.winMsg : T.nextMsg}</p></div>`;
     }
   }
 
+  let lastPlaceHtml = '';
   function livePhone() {
     const s = state; if (!s || !s.me) return;
-    const tot = $('tot'); if (tot) tot.textContent = s.total;
+    document.querySelectorAll('.tot').forEach(el => { el.textContent = s.total; });
     const t = s.tables[s.me.table]; if (!t) return;
     const bar = $('bar'); if (bar) bar.style.width = t.prog + '%';
     const pl = $('place');
     if (pl && s.phase === 'race') {
       const ahead = s.tables.filter(x => x !== t && (x.players > 0 || x.prog > 0) && (
         (x.finish != null && (t.finish == null || x.finish < t.finish)) || (x.finish == null && t.finish == null && x.prog > t.prog))).length;
-      pl.textContent = t.finish != null ? L().crossed : L().nowPlace(ahead + 1);
+      const html = t.finish != null ? T.crossed : T.nowPlace(ahead + 1);
+      if (html !== lastPlaceHtml) { pl.innerHTML = html; lastPlaceHtml = html; }
       const btn = $('tapBtn'); if (btn && t.finish != null) btn.disabled = true;
     }
   }
@@ -469,25 +521,24 @@ input,select{font:inherit;font-size:17px;width:100%;padding:13px;border-radius:1
 
   function startHost(n) {
     if (!hasPeer) return;
-    store.set('derby-tables', String(n));
-    landingMsg = L().opening; const lm = $('landMsg'); if (lm) lm.textContent = landingMsg;
+    store.set('derby-table-count', String(n));
+    landingMsg = T.opening; const lm = $('landMsg'); if (lm) lm.innerHTML = landingMsg;
     ['joinBtn', 'hostBtn'].forEach(id => { const b = $(id); if (b) b.disabled = true; });
     const saved = cleanCode(store.get('derby-host-code'));
     const tryOpen = attempt => {
       // 先沿用上次的代碼（預先印好的 QR Code 仍然有效）；被佔用就稍後再試，多次失敗才換新代碼
       const code = saved.length === 4 && attempt < 4 ? saved : randCode();
       const p = new Peer(PREFIX + code.toLowerCase());
-      p.on('open', () => { store.set('derby-host-code', code); enterHost(p, code, n); });
+      p.on('open', () => { store.set('derby-host-code', code); if (!host) enterHost(p, code, n); else $('tvConn').innerHTML = T.tvOk; });
       p.on('connection', onPlayerConn);
       p.on('error', e => {
         if (e.type === 'unavailable-id' && attempt < 8) { p.destroy(); setTimeout(() => tryOpen(attempt + 1), attempt < 4 ? 2500 : 0); return; }
         if (!host) {
-          landingMsg = L().openFail(e.type); const m = $('landMsg'); if (m) m.textContent = landingMsg;
+          landingMsg = T.openFail(e.type); const m = $('landMsg'); if (m) m.innerHTML = landingMsg;
           ['joinBtn', 'hostBtn'].forEach(id => { const b = $(id); if (b) b.disabled = false; }); p.destroy();
         }
       });
-      p.on('disconnected', () => { if (host && host.peer === p && !p.destroyed) { $('tvConn').textContent = L().tvBad; try { p.reconnect(); } catch {} } });
-      p.on('open', () => { if (host) $('tvConn').textContent = L().tvOk; });
+      p.on('disconnected', () => { if (host && host.peer === p && !p.destroyed) { $('tvConn').innerHTML = T.tvBad; try { p.reconnect(); } catch {} } });
     };
     tryOpen(0);
   }
@@ -497,18 +548,21 @@ input,select{font:inherit;font-size:17px;width:100%;padding:13px;border-radius:1
     host.race = freshRace(1);
     $('phoneShell').hidden = true; $('tv').hidden = false;
     const url = baseUrl() + '?room=' + code;
-    $('roomCode').textContent = code;
-    $('joinUrl').textContent = url.replace(/^https?:\/\//, '');
-    try { const qr = qrcode(0, 'M'); qr.addData(url); qr.make(); $('qr').innerHTML = qr.createSvgTag({ cellSize: 8, margin: 0, scalable: true }); }
-    catch { $('qr').innerHTML = `<b style="font-size:40px">${code}</b>`; }
+    ['roomCode', 'roomCodeBig'].forEach(id => { $(id).textContent = code; });
+    ['joinUrl', 'joinUrlBig'].forEach(id => { $(id).textContent = url.replace(/^https?:\/\//, ''); });
+    try {
+      const qr = qrcode(0, 'M'); qr.addData(url); qr.make();
+      const svg = qr.createSvgTag({ cellSize: 8, margin: 0, scalable: true });
+      $('qr').innerHTML = svg; $('qrBig').innerHTML = svg;
+    } catch { $('qr').innerHTML = $('qrBig').innerHTML = `<b style="font-size:40px">${code}</b>`; }
     try { navigator.wakeLock?.request('screen').catch(() => {}); } catch {}
     document.addEventListener('visibilitychange', () => { if (document.visibilityState === 'visible') try { navigator.wakeLock?.request('screen').catch(() => {}); } catch {} });
     history.replaceState(null, '', location.pathname + '?host=1');
-    $('tvConn').textContent = L().tvOk;
+    $('tvConn').innerHTML = T.tvOk;
     setInterval(hostTick, 50);
     setInterval(broadcastState, 200);
     setInterval(() => renderTv(snapshot()), 100);
-    langListeners.push(() => { tvLastPhase = tvLastPhase === 'done' ? 'done-relang' : tvLastPhase; renderTv(snapshot(), true); });
+    $('hint').innerHTML = T.hintIdle;
     renderTv(snapshot());
   }
 
@@ -606,7 +660,7 @@ input,select{font:inherit;font-size:17px;width:100%;padding:13px;border-radius:1
       countdown: R.phase === 'count' ? Math.max(0, Math.ceil((R.countdownEnd - t) / 1000)) : 0,
       elapsed: R.phase === 'race' ? (t - R.startAt) / 1000 : R.phase === 'done' ? (R.endAt - R.startAt) / 1000 : 0,
       total: counts.reduce((a, b) => a + b, 0),
-      tables: counts.map((n, i) => ({ name: null, players: n, prog: +R.prog[i].toFixed(2), rate: +R.rate[i].toFixed(2), finish: R.finish[i] })),
+      tables: counts.map((n, i) => ({ players: n, prog: +R.prog[i].toFixed(2), rate: +R.rate[i].toFixed(2), finish: R.finish[i] })),
       ranking: R.phase === 'done' ? ranking() : null,
       top: R.phase === 'done' ? R.top.map(({ name, table, taps }) => ({ name, table, taps })) : null,
     };
@@ -622,98 +676,119 @@ input,select{font:inherit;font-size:17px;width:100%;padding:13px;border-radius:1
   function broadcastState() { const snap = snapshot(); for (const P of host.players.values()) if (P.online) sendState(P, snap); }
 
   // ----- 電視畫面 -----
-  let lanes = [], tvLastPhase = '', lastCountdown = -1, lastCallAt = 0, announced = false, callFn = () => L().say.idle, hintKey = 'hintIdle';
-  const tname = (s, i) => s.tables[i].name || L().table(i);
+  let lanes = [], tvLastPhase = '', lastCountdown = -1, lastCallAt = 0, announced = false, lobbySig = '';
   const placeOf = (tables, i) => tables.filter(t => t.finish != null && t.finish < tables[i].finish).length;
-  function say(fn) { callFn = fn; $('call').textContent = fn(); }
+  const setHtml = (el, html) => { if (el.__h !== html) { el.innerHTML = html; el.__h = html; } };
+  function say(html) { setHtml($('call'), html); }
 
   function buildLanes(n) {
     const track = $('track'); track.innerHTML = '';
     lanes = Array.from({ length: n }, (_, i) => {
       const lane = document.createElement('div'); lane.className = 'lane';
       lane.innerHTML = `<div class="lane-label"><span class="silk" style="background:${COLORS[i]}">${i + 1}</span>
-        <div><div class="lane-name"></div><div class="lane-sub"></div></div></div>
+        <div><div class="lane-name">${H(tn(i))}</div><div class="lane-sub"></div></div></div>
         <div class="run"><div class="trail" style="background:${COLORS[i]}"></div><div class="horse"><span>🏇</span></div><div class="finish"></div></div>`;
       track.appendChild(lane);
-      return { lane, run: lane.querySelector('.run'), horse: lane.querySelector('.horse'), trail: lane.querySelector('.trail'), sub: lane.querySelector('.lane-sub'), name: lane.querySelector('.lane-name') };
+      return { lane, run: lane.querySelector('.run'), horse: lane.querySelector('.horse'), trail: lane.querySelector('.trail'), sub: lane.querySelector('.lane-sub') };
+    });
+  }
+
+  function renderLobby(s) {
+    // 每枱名單：只在有變動時重畫
+    const groups = Array.from({ length: host.n }, () => []);
+    for (const P of host.players.values()) if (P.online && P.table != null) groups[P.table].push(P.name);
+    const sig = JSON.stringify(groups);
+    if (sig === lobbySig) return;
+    lobbySig = sig;
+    const box = $('tcards'); box.innerHTML = '';
+    groups.forEach((names, i) => {
+      const card = document.createElement('div'); card.className = 'tcard'; card.style.borderColor = COLORS[i];
+      card.innerHTML = `<div class="tcard-head"><span style="color:${COLORS[i]}">${H(tn(i))}</span><span class="tcard-n">${names.length}</span></div><div class="tcard-names"></div>`;
+      const list = card.querySelector('.tcard-names');
+      const named = names.filter(Boolean), anon = names.length - named.length;
+      if (!names.length) list.innerHTML = T.waiting;
+      named.forEach(nm => { const sp = document.createElement('span'); sp.textContent = nm; list.appendChild(sp); });
+      if (anon > 0) { const sp = document.createElement('span'); sp.textContent = `+${anon} 位無名 / no name`; list.appendChild(sp); }
+      box.appendChild(card);
     });
   }
 
   function commentary(s) {
     const t = s.elapsed; if (t - lastCallAt < 2.6) return; lastCallAt = t;
-    const T = s.tables, alive = T.map((x, i) => i).filter(i => T[i].players > 0 && T[i].finish == null).sort((a, b) => T[b].prog - T[a].prog);
+    const Tb = s.tables, alive = Tb.map((x, i) => i).filter(i => Tb[i].players > 0 && Tb[i].finish == null).sort((a, b) => Tb[b].prog - Tb[a].prog);
     if (alive.length < 2) return;
-    const a = alive[0], b = alive[1], z = alive[alive.length - 1], gap = T[a].prog - T[b].prog, lead = T[a].prog, pick = Math.random();
-    const choose = arr => arr[Math.floor(pick * arr.length)];
-    if (lead < 25) say(() => choose(L().say.early(tname(s, a), tname(s, b))));
-    else if (lead < 70) {
-      if (gap < 3) say(() => choose(L().say.close(tname(s, a), tname(s, b))));
-      else { const g = gap.toFixed(0); say(() => choose(L().say.lead(tname(s, a), g, tname(s, z)))); }
-    } else say(() => gap < 3 ? L().say.straightClose(tname(s, a), tname(s, b)) : L().say.straight(tname(s, a)));
+    const a = alive[0], b = alive[1], z = alive[alive.length - 1], gap = Tb[a].prog - Tb[b].prog, lead = Tb[a].prog;
+    const choose = arr => arr[Math.floor(Math.random() * arr.length)];
+    if (lead < 25) say(choose(T.say.early(tn(a), tn(b))));
+    else if (lead < 70) say(gap < 3 ? choose(T.say.close(tn(a), tn(b))) : choose(T.say.lead(tn(a), gap.toFixed(0), tn(z))));
+    else say(gap < 3 ? T.say.straightClose(tn(a), tn(b)) : T.say.straight(tn(a)));
   }
 
-  function renderTv(s, force) {
+  function renderTv(s) {
     if (lanes.length !== s.tables.length) buildLanes(s.tables.length);
-    if (force) { $('call').textContent = callFn(); if (hintKey) $('hint').textContent = L()[hintKey]; }
-    $('raceName').textContent = L().raceName(s.no);
+    const idle = s.phase === 'idle';
+    $('lobby').hidden = !idle; $('board').hidden = idle; $('side').hidden = idle;
+    $('tvWrap').classList.toggle('lobby-mode', idle);
+    $('startBtn').classList.toggle('btn-start-big', idle);
+    if (idle) { $('totalBig').textContent = s.total; renderLobby(s); }
+
+    setHtml($('raceName'), T.raceName(s.no));
     $('total').textContent = s.total;
-    const chip = $('phaseChip'); chip.dataset.phase = s.phase; chip.textContent = L().phase[s.phase];
-    $('clock').textContent = s.elapsed.toFixed(1) + ' ' + L().sec;
+    const chip = $('phaseChip'); chip.dataset.phase = s.phase; setHtml(chip, T.phase[s.phase]);
+    $('clock').textContent = s.elapsed.toFixed(1) + ' ' + T.sec;
     $('board').classList.toggle('racing', s.phase === 'race');
-    $('startBtn').textContent = s.phase === 'done' ? L().again : L().start;
+    setHtml($('startBtn'), s.phase === 'done' ? T.again : T.start);
     $('startBtn').disabled = s.phase === 'count' || s.phase === 'race';
     $('stopBtn').hidden = s.phase !== 'race';
 
-    s.tables.forEach((t, i) => {
+    if (!idle) s.tables.forEach((t, i) => {
       const l = lanes[i];
-      l.name.textContent = tname(s, i);
       l.lane.classList.toggle('empty', t.players === 0 && t.prog === 0);
       const w = l.run.clientWidth - 64 - 14, x = Math.max(0, Math.min(1, t.prog / 100)) * w;
       l.horse.style.transform = `translateX(${x}px)`;
       l.trail.style.width = (x + 24) + 'px';
-      l.sub.textContent = (s.phase === 'race' || s.phase === 'done') && t.players > 0 ? L().rate(t.players, t.rate.toFixed(1)) : L().players(t.players);
+      setHtml(l.sub, (s.phase === 'race' || s.phase === 'done') && t.players > 0 ? T.rate(t.players, t.rate.toFixed(1)) : T.players(t.players));
       let tag = l.run.querySelector('.place-tag');
-      if (t.finish != null) { if (!tag) { tag = document.createElement('span'); tag.className = 'place-tag'; l.run.appendChild(tag); } tag.textContent = L().place[placeOf(s.tables, i)]; }
+      if (t.finish != null) { if (!tag) { tag = document.createElement('span'); tag.className = 'place-tag'; l.run.appendChild(tag); } setHtml(tag, T.place[placeOf(s.tables, i)]); }
       else if (tag) tag.remove();
     });
 
     const ov = $('overlay');
-    if (s.phase === 'count') { ov.hidden = false; if (s.countdown !== lastCountdown || force) { ov.textContent = s.countdown || L().go; lastCountdown = s.countdown; } }
-    else if (s.phase === 'race' && tvLastPhase === 'count') { ov.textContent = L().go; setTimeout(() => { ov.hidden = true; }, 700); }
+    if (s.phase === 'count') { ov.hidden = false; if (s.countdown !== lastCountdown) { setHtml(ov, s.countdown ? String(s.countdown) : T.go); lastCountdown = s.countdown; } }
+    else if (s.phase === 'race' && tvLastPhase === 'count') { setHtml(ov, T.go); setTimeout(() => { ov.hidden = true; }, 700); }
     else if (s.phase !== 'race') ov.hidden = true;
 
-    if (s.phase !== tvLastPhase && !tvLastPhase.startsWith(s.phase)) {
-      if (s.phase === 'idle') { say(() => L().say.idle); announced = false; }
-      if (s.phase === 'count') { say(() => L().say.count); announced = false; }
-      if (s.phase === 'race') { say(() => L().say.go); lastCallAt = 0; }
+    if (s.phase !== tvLastPhase) {
+      if (s.phase === 'idle') { say(T.say.idle); announced = false; }
+      if (s.phase === 'count') { say(T.say.count); announced = false; lastCountdown = -1; }
+      if (s.phase === 'race') { say(T.say.go); lastCallAt = 0; }
     }
     if (s.phase === 'race') {
       const firstIdx = s.tables.findIndex((t, i) => t.finish != null && placeOf(s.tables, i) === 0);
-      if (firstIdx >= 0 && !announced) { say(() => L().say.win(tname(s, firstIdx))); announced = true; }
+      if (firstIdx >= 0 && !announced) { say(T.say.win(tn(firstIdx))); announced = true; }
       else if (firstIdx < 0) commentary(s);
     }
 
     const res = $('results'), mvp = $('mvp');
     if (s.phase === 'done' && s.ranking) {
       if (tvLastPhase !== 'done') {
-        const r = s.ranking, T = s.tables, first = T[r[0]];
-        res.innerHTML = r.map((i, k) => `<div class="res${k === 0 ? ' first' : ''}"><span class="res-rank">${L().place[k]}</span><span class="res-name" style="color:${COLORS[i]}"></span><span class="res-time"></span></div>`).join('');
-        res.querySelectorAll('.res').forEach((el, k) => {
-          const i = r[k], t = T[i];
-          el.querySelector('.res-name').textContent = tname(s, i);
-          el.querySelector('.res-time').textContent = t.finish != null
-            ? L().time(t.finish.toFixed(2), k > 0 && first.finish != null ? (t.finish - first.finish).toFixed(2) : '')
-            : L().dnf(t.prog.toFixed(0));
-        });
+        const r = s.ranking, Tb = s.tables, first = Tb[r[0]];
+        res.innerHTML = r.map((i, k) => {
+          const t = Tb[i];
+          const time = t.finish != null ? T.time(t.finish.toFixed(2), k > 0 && first.finish != null ? (t.finish - first.finish).toFixed(2) : '') : T.dnf(t.prog.toFixed(0));
+          return `<div class="res${k === 0 ? ' first' : ''}"><span class="res-rank">${T.place[k]}</span><span class="res-name" style="color:${COLORS[i]}">${H(tn(i))}</span><span class="res-time">${time}</span></div>`;
+        }).join('');
         res.hidden = !r.length;
         const list = $('mvpList'); list.innerHTML = '';
         (s.top || []).forEach(p => {
           const li = document.createElement('li');
-          li.textContent = `${p.name || L().anon}（${T[p.table] ? tname(s, p.table) : ''}）`;
-          const nn = document.createElement('span'); nn.className = 'n'; nn.textContent = L().taps(p.taps); li.appendChild(nn); list.appendChild(li);
+          const nm = document.createElement('span'); nm.textContent = p.name || '無名英雄 Mystery tapper';
+          const tb = document.createElement('span'); tb.className = 'muted'; tb.textContent = p.table != null ? `（${ZH.table(p.table)} ${EN.table(p.table)}）` : '';
+          const nn = document.createElement('span'); nn.className = 'n'; nn.textContent = `${p.taps} 下 taps`;
+          li.append(nm, tb, nn); list.appendChild(li);
         });
         mvp.hidden = !(s.top && s.top.length);
-        if (r.length && tvLastPhase !== 'done-relang') say(() => L().say.done(tname(s, r[0])));
+        if (r.length) say(T.say.done(tn(r[0])));
       }
     } else { res.hidden = true; mvp.hidden = true; }
     tvLastPhase = s.phase;
@@ -722,24 +797,22 @@ input,select{font:inherit;font-size:17px;width:100%;padding:13px;border-radius:1
   $('startBtn').onclick = () => {
     const R = host.race;
     if (R.phase === 'count' || R.phase === 'race') return;
-    if (!tableCounts().some(n => n > 0)) { hintKey = 'hintNoPlayers'; $('hint').textContent = L().hintNoPlayers; return; }
-    hintKey = 'hintIdle'; $('hint').textContent = L().hintIdle;
+    if (!tableCounts().some(n => n > 0)) { $('hint').innerHTML = T.hintNoPlayers; return; }
+    $('hint').innerHTML = T.hintIdle;
     if (R.phase === 'done') host.raceNo++;
     host.race = freshRace(host.raceNo);
     host.race.phase = 'count'; host.race.countdownEnd = Date.now() + COUNTDOWN_MS;
     broadcastState();
   };
   $('stopBtn').onclick = () => { if (host.race.phase === 'race') { endRace(); broadcastState(); } };
-  $('resetBtn').onclick = () => { host.race = freshRace(host.raceNo); broadcastState(); };
+  $('resetBtn').onclick = () => { host.race = freshRace(host.raceNo); lobbySig = ''; broadcastState(); };
   $('fsBtn').onclick = () => { if (!document.fullscreenElement) document.documentElement.requestFullscreen?.().catch(() => {}); else document.exitFullscreen?.(); };
-  window.addEventListener('resize', () => { if (host) renderTv(snapshot(), true); });
 
   // =====================================================================
   //  啟動
   // =====================================================================
-  langListeners.push(() => { if (!host) { view = ''; if (roomCode.length === 4) renderPhone(); else renderLanding(); } });
   if (roomCode.length === 4) startPlayer();
-  else if (qs.get('host') === '1' && hasPeer) { renderLanding(); startHost(Number(store.get('derby-tables')) || 4); }
+  else if (qs.get('host') === '1' && hasPeer) { renderLanding(); startHost(Number(store.get('derby-table-count')) || DEFAULT_TABLES); }
   else renderLanding();
 })();
 </script>

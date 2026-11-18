@@ -17,7 +17,7 @@ const CUSTOM_NAMES = process.env.TABLES
   ? process.env.TABLES.split(',').map(s => s.trim()).filter(Boolean).slice(0, 8)
   : null;
 const TABLE_COUNT = CUSTOM_NAMES ? CUSTOM_NAMES.length
-  : Math.max(2, Math.min(8, Number(process.env.TABLE_COUNT) || 4));
+  : Math.max(2, Math.min(8, Number(process.env.TABLE_COUNT) || 5));
 const TABLES = Array.from({ length: TABLE_COUNT }, (_, i) => (CUSTOM_NAMES ? CUSTOM_NAMES[i] : null));
 const RACE_SECONDS = Number(process.env.RACE_SECONDS) || 20; // 平均手速下大約跑幾秒
 const AVG_TAPS = 6.5;               // 一般人每秒大約按 6.5 下
