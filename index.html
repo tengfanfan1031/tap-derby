@@ -36,7 +36,7 @@ input,select{font:inherit;font-size:17px;width:100%;padding:13px;border-radius:1
 .text .en,.err .en,.hint .en,.lobby-hint .en,.call-text .en{font-size:.8em}
 .chip .en,.lane-sub .en,.place-tag .en,.res-time .en,.status .en,.stats .en,.tcard-head .en,.lobby-total .en,.meta .en{display:inline;margin-left:.35em;font-size:.82em}
 .lane-sub .en{display:block;margin-left:0}
-.tcard-names .en{display:inline;font-size:.95em;margin-left:.35em}
+.tcard-names .en,.tcard-count .en,.lobby-code .en{display:inline;font-size:.95em;margin-left:.35em}
 .muted .en,.side h2 .en,.scan-big .en,.mvp-box h2 .en{font-size:.8em}
 
 /* ===== 手機 ===== */
@@ -90,20 +90,25 @@ input,select{font:inherit;font-size:17px;width:100%;padding:13px;border-radius:1
 .clock{font-family:var(--display);font-size:32px;font-variant-numeric:tabular-nums;min-width:6ch;text-align:right}
 
 /* 等人入場大廳 */
-.lobby{display:grid;grid-template-columns:minmax(240px,440px) minmax(0,1fr);gap:28px;background:var(--panel);border:1px solid var(--line);border-radius:16px;padding:24px;align-items:start}
-@media (max-width:820px){.lobby{grid-template-columns:minmax(0,1fr)}}
-.lobby-qr{display:flex;flex-direction:column;gap:10px;align-items:center;text-align:center}
-.lobby-qr .qr{max-width:440px}
-.scan-big{font-size:clamp(20px,2.2vw,28px);font-weight:900;line-height:1.25}
-.lobby-right{display:flex;flex-direction:column;gap:16px;min-width:0}
+.lobby{display:flex;flex-direction:column;gap:18px;background:var(--panel);border:1px solid var(--line);border-radius:16px;padding:22px}
+.lobby-top{display:flex;justify-content:space-between;align-items:flex-end;gap:16px;flex-wrap:wrap}
+.scan-big{font-size:clamp(22px,2.6vw,34px);font-weight:900;line-height:1.25}
 .lobby-total{display:flex;align-items:baseline;gap:12px;font-size:20px;font-weight:700;flex-wrap:wrap}
-.lobby-total .big-n{font-size:clamp(56px,7vw,96px)}
-.tcards{display:grid;grid-template-columns:repeat(auto-fill,minmax(190px,1fr));gap:12px}
-.tcard{border:2px solid var(--line);border-radius:12px;padding:12px 14px;display:flex;flex-direction:column;gap:8px;min-height:120px;min-width:0}
-.tcard-head{display:flex;justify-content:space-between;align-items:flex-start;gap:8px;font-weight:900;font-size:18px;line-height:1.25}
-.tcard-n{font-family:var(--display);font-size:34px;line-height:1;font-variant-numeric:tabular-nums}
-.tcard-names{font-size:14px;color:var(--muted);display:flex;flex-wrap:wrap;gap:2px 10px;min-width:0;overflow-wrap:anywhere}
+.lobby-total .big-n{font-size:clamp(48px,6vw,84px)}
+/* 每張枱一張卡：枱名、專屬 QR Code、人數與名字。卡與卡之間留空位，避免手機鏡頭掃錯隔離枱 */
+.tcards{display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:22px}
+.tcard{border:3px solid var(--line);border-radius:16px;padding:14px;display:flex;flex-direction:column;gap:10px;min-width:0;align-items:center;text-align:center}
+.tcard-name{font-weight:900;font-size:clamp(22px,2.2vw,30px);line-height:1.2}
+.tcard-name .en{font-size:.6em}
+.tcard-qr{background:#fff;border-radius:10px;padding:10px;width:100%;max-width:260px;aspect-ratio:1}
+.tcard-qr svg{width:100%;height:100%;display:block}
+.tcard-count{display:flex;align-items:baseline;gap:8px;font-weight:700}
+.tcard-n{font-family:var(--display);font-size:40px;line-height:1;font-variant-numeric:tabular-nums}
+.tcard-names{font-size:14px;color:var(--muted);display:flex;flex-wrap:wrap;justify-content:center;gap:2px 10px;min-width:0;overflow-wrap:anywhere;min-height:1.5em}
+.lobby-foot{display:flex;justify-content:space-between;align-items:center;gap:12px;flex-wrap:wrap}
 .lobby-hint{font-size:clamp(17px,1.7vw,22px);color:var(--ink);margin:0;font-weight:700}
+.lobby-code{font-size:14px}
+.room-code-sm{font-family:var(--display);letter-spacing:.12em;color:var(--ink);font-size:18px}
 .btn-start-big{font-size:22px;padding:16px 28px}
 
 .board{background:var(--panel);border:1px solid var(--line);border-radius:16px;padding:18px;display:flex;flex-direction:column;gap:14px;position:relative;overflow:hidden}
@@ -176,17 +181,14 @@ input,select{font:inherit;font-size:17px;width:100%;padding:13px;border-radius:1
       </div>
 
       <div class="lobby" id="lobby">
-        <div class="lobby-qr">
+        <div class="lobby-top">
           <div class="scan-big" data-i18n="scanBig"></div>
-          <div class="qr" id="qrBig"></div>
-          <div class="muted" data-i18n="roomCode"></div>
-          <div class="room-code" id="roomCodeBig"></div>
-          <div class="url" id="joinUrlBig"></div>
-        </div>
-        <div class="lobby-right">
           <div class="lobby-total"><span class="big-n" id="totalBig">0</span><span data-i18n="joined"></span></div>
-          <div class="tcards" id="tcards"></div>
+        </div>
+        <div class="tcards" id="tcards"></div>
+        <div class="lobby-foot">
           <p class="lobby-hint" data-i18n="lobbyHint"></p>
+          <div class="muted lobby-code"><span data-i18n="roomCode"></span> <b class="room-code-sm" id="roomCodeBig"></b> · <span id="joinUrlBig"></span></div>
         </div>
       </div>
 
@@ -254,7 +256,7 @@ input,select{font:inherit;font-size:17px;width:100%;padding:13px;border-radius:1
     phase:{idle:'等人入場',count:'準備',race:'比賽中',done:'完場'},
     start:'開始比賽', again:'再跑一場', stop:'提早完場', reset:'重設', fullscreen:'全螢幕',
     hintIdle:'人齊後按「開始比賽」，倒數 3 秒一齊開跑。請保持這個頁面開啟，電視就是房主。', hintNoPlayers:'未有人加入，請大家先掃 QR Code。',
-    scan:'遲到？掃描加入', scanBig:'用手機掃描，揀自己張枱', roomCode:'房間代碼', joined:'人已加入',
+    scan:'遲到？掃描加入', scanBig:'坐幾號枱，就掃嗰張枱嘅 QR Code', roomCode:'房間代碼', joined:'人已加入',
     lobbyHint:'等齊人之後，主持人按「開始比賽」，全場一齊開跑！',
     tvOk:'房間已開放', tvBad:'與配對伺服器斷線，重新連線中…（已連上的手機不受影響）',
     players:n=>`${n} 人`, rate:(n,r)=>`${n} 人 · 每人 ${r} 下/秒`,
@@ -289,7 +291,7 @@ input,select{font:inherit;font-size:17px;width:100%;padding:13px;border-radius:1
     phase:{idle:'Lobby',count:'Get ready',race:'Racing',done:'Finished'},
     start:'Start race', again:'Run again', stop:'End race now', reset:'Reset', fullscreen:'Full screen',
     hintIdle:'When everyone is in, tap Start. A 3-second countdown starts the race. Keep this page open: the TV hosts the room.', hintNoPlayers:'Nobody has joined yet. Ask everyone to scan the QR code.',
-    scan:'Late? Scan to join', scanBig:'Scan with your phone and pick your table', roomCode:'Room code', joined:'players joined',
+    scan:'Late? Scan to join', scanBig:'Scan the QR code for the table you\'re sitting at', roomCode:'Room code', joined:'players joined',
     lobbyHint:'Once everyone is in, the host taps Start and the whole room races together!',
     tvOk:'Room is open', tvBad:'Lost the matchmaking server. Reconnecting… (phones already connected keep playing)',
     players:n=>`${n} ${n===1?'player':'players'}`, rate:(n,r)=>`${n} players · ${r} taps/s each`,
@@ -550,11 +552,8 @@ input,select{font:inherit;font-size:17px;width:100%;padding:13px;border-radius:1
     const url = baseUrl() + '?room=' + code;
     ['roomCode', 'roomCodeBig'].forEach(id => { $(id).textContent = code; });
     ['joinUrl', 'joinUrlBig'].forEach(id => { $(id).textContent = url.replace(/^https?:\/\//, ''); });
-    try {
-      const qr = qrcode(0, 'M'); qr.addData(url); qr.make();
-      const svg = qr.createSvgTag({ cellSize: 8, margin: 0, scalable: true });
-      $('qr').innerHTML = svg; $('qrBig').innerHTML = svg;
-    } catch { $('qr').innerHTML = $('qrBig').innerHTML = `<b style="font-size:40px">${code}</b>`; }
+    try { $('qr').innerHTML = qrSvg(url); } catch { $('qr').innerHTML = `<b style="font-size:40px">${code}</b>`; }
+    buildTableCards(url);
     try { navigator.wakeLock?.request('screen').catch(() => {}); } catch {}
     document.addEventListener('visibilitychange', () => { if (document.visibilityState === 'visible') try { navigator.wakeLock?.request('screen').catch(() => {}); } catch {} });
     history.replaceState(null, '', location.pathname + '?host=1');
@@ -693,23 +692,40 @@ input,select{font:inherit;font-size:17px;width:100%;padding:13px;border-radius:1
     });
   }
 
+  function qrSvg(text) { const qr = qrcode(0, 'M'); qr.addData(text); qr.make(); return qr.createSvgTag({ cellSize: 8, margin: 0, scalable: true }); }
+
+  // 每張枱一張卡，QR Code 連到 ?room=代碼&t=枱號，掃描後自動入該枱
+  let tcardEls = [];
+  function buildTableCards(url) {
+    const box = $('tcards'); box.innerHTML = '';
+    tcardEls = Array.from({ length: host.n }, (_, i) => {
+      const card = document.createElement('div'); card.className = 'tcard'; card.style.borderColor = COLORS[i];
+      card.innerHTML = `<div class="tcard-name" style="color:${COLORS[i]}">${H(tn(i))}</div>
+        <div class="tcard-qr"></div>
+        <div class="tcard-count"><span class="tcard-n">0</span><span>人<span class="en">players</span></span></div>
+        <div class="tcard-names"></div>`;
+      try { card.querySelector('.tcard-qr').innerHTML = qrSvg(`${url}&t=${i + 1}`); }
+      catch { card.querySelector('.tcard-qr').innerHTML = `<b style="font-size:24px">${i + 1}</b>`; }
+      box.appendChild(card);
+      return { n: card.querySelector('.tcard-n'), names: card.querySelector('.tcard-names') };
+    });
+  }
+
   function renderLobby(s) {
-    // 每枱名單：只在有變動時重畫
+    // 每枱人數與名單：只在有變動時重畫
     const groups = Array.from({ length: host.n }, () => []);
     for (const P of host.players.values()) if (P.online && P.table != null) groups[P.table].push(P.name);
     const sig = JSON.stringify(groups);
     if (sig === lobbySig) return;
     lobbySig = sig;
-    const box = $('tcards'); box.innerHTML = '';
     groups.forEach((names, i) => {
-      const card = document.createElement('div'); card.className = 'tcard'; card.style.borderColor = COLORS[i];
-      card.innerHTML = `<div class="tcard-head"><span style="color:${COLORS[i]}">${H(tn(i))}</span><span class="tcard-n">${names.length}</span></div><div class="tcard-names"></div>`;
-      const list = card.querySelector('.tcard-names');
+      const el = tcardEls[i]; if (!el) return;
+      el.n.textContent = names.length;
+      el.names.innerHTML = '';
       const named = names.filter(Boolean), anon = names.length - named.length;
-      if (!names.length) list.innerHTML = T.waiting;
-      named.forEach(nm => { const sp = document.createElement('span'); sp.textContent = nm; list.appendChild(sp); });
-      if (anon > 0) { const sp = document.createElement('span'); sp.textContent = `+${anon} 位無名 / no name`; list.appendChild(sp); }
-      box.appendChild(card);
+      if (!names.length) el.names.innerHTML = T.waiting;
+      named.forEach(nm => { const sp = document.createElement('span'); sp.textContent = nm; el.names.appendChild(sp); });
+      if (anon > 0) { const sp = document.createElement('span'); sp.textContent = `+${anon} 位無名 no name`; el.names.appendChild(sp); }
     });
   }
 
