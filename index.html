@@ -220,7 +220,7 @@ input,select{font:inherit;font-size:17px;width:100%;padding:13px;border-radius:1
   </div>
 </div>
 
-<script src="https://unpkg.com/peerjs@1.5.4/dist/peerjs.min.js"></script>
+<script src="https://unpkg.com/mqtt@5.10.1/dist/mqtt.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcode-generator/1.4.4/qrcode.min.js"></script>
 <script>
 (() => {
@@ -241,7 +241,8 @@ input,select{font:inherit;font-size:17px;width:100%;padding:13px;border-radius:1
     landIntro:'全場分枱比賽：用手機狂按，替自己那枱的馬加速！', hostTitle:'我是主持人',
     hostBtn:'在電視開房', or:'或', joinBtn:'加入比賽', needCode:'請輸入電視上的 4 碼房間代碼。',
     noPeer:'連線元件載入失敗，請確認網絡後重新整理。', opening:'開房中…', openFail:t=>`開房失敗（${t}），請再試一次。`,
-    connecting:'連線中…', notFound:'找不到這個房間，請確認電視上的代碼。', connFail:'連唔到房間，請確認網絡後再試。', retry:'再試一次',
+    connecting:'連線中…', notFound:'未收到電視訊號：請確認電視已經開房。電視一開房，這頁會自動連上。', connFail:'連唔到房間，請確認網絡後再試。', retry:'重新整理',
+    hostGone:'電視暫時離線，等緊重新連線…',
     joinIntro:'輸入你的名字（可以唔填），再揀你坐緊嗰張枱。',
     joinedCount:n=>`已有 ${n} 人加入`, ready:'準備',
     waitText:'等主持人人齊後開始比賽。開跑之後，用手指狂按個大掣！可以用兩隻手指輪流按。',
@@ -258,7 +259,7 @@ input,select{font:inherit;font-size:17px;width:100%;padding:13px;border-radius:1
     hintIdle:'人齊後按「開始比賽」，倒數 3 秒一齊開跑。請保持這個頁面開啟，電視就是房主。', hintNoPlayers:'未有人加入，請大家先掃 QR Code。',
     scan:'遲到？掃描加入', scanBig:'坐幾號枱，就掃嗰張枱嘅 QR Code', roomCode:'房間代碼', joined:'人已加入',
     lobbyHint:'等齊人之後，主持人按「開始比賽」，全場一齊開跑！',
-    tvOk:'房間已開放', tvBad:'與配對伺服器斷線，重新連線中…（已連上的手機不受影響）',
+    tvOk:'房間已開放', tvBad:'與中轉站斷線，重新連線中…',
     players:n=>`${n} 人`, rate:(n,r)=>`${n} 人 · 每人 ${r} 下/秒`,
     time:(t,d)=>`${t} 秒${d?` · 慢 ${d} 秒`:''}`, dnf:p=>`未到終點 · 跑咗 ${p}%`,
     mvpTitle:'全場最快手指', anon:'無名英雄', taps:n=>`${n} 下`, waiting:'等緊同事入枱…',
@@ -276,7 +277,8 @@ input,select{font:inherit;font-size:17px;width:100%;padding:13px;border-radius:1
     landIntro:'Tables race each other. Tap your phone as fast as you can to speed up your table\'s horse!', hostTitle:'I\'m the host',
     hostBtn:'Host on TV', or:'or', joinBtn:'Join the race', needCode:'Enter the 4-character room code on the TV.',
     noPeer:'Could not load multiplayer. Check your connection and refresh.', opening:'Opening the room…', openFail:t=>`Could not open a room (${t}). Please try again.`,
-    connecting:'Connecting…', notFound:'No room with that code. Check the TV.', connFail:'Could not reach the room. Check your connection and try again.', retry:'Try again',
+    connecting:'Connecting…', notFound:'No signal from the TV yet. Check that the TV has opened the room. This page connects by itself once it does.', connFail:'Could not reach the room. Check your connection and try again.', retry:'Refresh',
+    hostGone:'The TV is offline. Waiting for it to reconnect…',
     joinIntro:'Enter your name (optional), then pick the table you\'re sitting at.',
     joinedCount:n=>`${n} joined`, ready:'Ready',
     waitText:'The host starts the race when everyone is in. Then tap the big button as fast as you can! Try alternating two fingers.',
@@ -293,7 +295,7 @@ input,select{font:inherit;font-size:17px;width:100%;padding:13px;border-radius:1
     hintIdle:'When everyone is in, tap Start. A 3-second countdown starts the race. Keep this page open: the TV hosts the room.', hintNoPlayers:'Nobody has joined yet. Ask everyone to scan the QR code.',
     scan:'Late? Scan to join', scanBig:'Scan the QR code for the table you\'re sitting at', roomCode:'Room code', joined:'players joined',
     lobbyHint:'Once everyone is in, the host taps Start and the whole room races together!',
-    tvOk:'Room is open', tvBad:'Lost the matchmaking server. Reconnecting… (phones already connected keep playing)',
+    tvOk:'Room is open', tvBad:'Lost the relay server. Reconnecting…',
     players:n=>`${n} ${n===1?'player':'players'}`, rate:(n,r)=>`${n} players · ${r} taps/s each`,
     time:(t,d)=>`${t}s${d?` · +${d}s`:''}`, dnf:p=>`Did not finish · ${p}%`,
     mvpTitle:'Fastest fingers', anon:'Mystery tapper', taps:n=>`${n} taps`, waiting:'Waiting for players…',
@@ -333,7 +335,21 @@ input,select{font:inherit;font-size:17px;width:100%;padding:13px;border-radius:1
   if (!cid || !/^[a-z0-9]{6,20}$/.test(cid)) { cid = Math.random().toString(36).slice(2, 12); store.set('derby-cid', cid); }
   document.querySelectorAll('[data-i18n]').forEach(el => { el.innerHTML = T[el.dataset.i18n]; });
 
-  const hasPeer = typeof Peer !== 'undefined';
+  // =====================================================================
+  //  連線：經 MQTT 公開中轉站（WebSocket / 443 類連接埠），Wi-Fi 與 4G／5G 都能接通，不需帳號
+  // =====================================================================
+  const BROKERS = ['wss://broker.hivemq.com:8884/mqtt', 'wss://broker.emqx.io:8084/mqtt', 'wss://test.mosquitto.org:8081/mqtt'];
+  const TOPIC = code => `${PREFIX}v2/${code.toLowerCase()}`;
+  const hasMqtt = typeof mqtt !== 'undefined';
+  function mqttConnect(i, h) {
+    const c = mqtt.connect(BROKERS[i], { clientId: 'td' + Math.random().toString(36).slice(2, 12), clean: true, connectTimeout: 10000, reconnectPeriod: 2000, keepalive: 30 });
+    c.on('connect', () => h.connect && h.connect());
+    c.on('offline', () => h.offline && h.offline());
+    c.on('close', () => h.offline && h.offline());
+    c.on('message', (topic, buf) => { let m; try { m = JSON.parse(buf.toString()); } catch { return; } h.message && h.message(topic, m); });
+    c.on('error', () => {});
+    return c;
+  }
   const app = $('app'), statusEl = $('status');
 
   // =====================================================================
@@ -352,71 +368,75 @@ input,select{font:inherit;font-size:17px;width:100%;padding:13px;border-radius:1
         <select id="tableCount">${[2,3,4,5,6,7,8].map(n => `<option value="${n}"${n===tc?' selected':''}>${n} 張枱 · ${n} tables</option>`).join('')}</select>
         <button id="hostBtn">${T.hostBtn}</button>
       </div>
-      <p class="err" id="landMsg">${landingMsg || (hasPeer ? '' : T.noPeer)}</p>`;
+      <p class="err" id="landMsg">${landingMsg || (hasMqtt ? '' : T.noPeer)}</p>`;
     $('joinBtn').onclick = () => {
       const c = cleanCode($('code').value);
       if (c.length < 4) { landingMsg = T.needCode; $('landMsg').innerHTML = landingMsg; $('code').focus(); return; }
       location.search = '?room=' + c;
     };
     $('hostBtn').onclick = () => startHost(Number($('tableCount').value) || DEFAULT_TABLES);
-    if (!hasPeer) { $('joinBtn').disabled = true; $('hostBtn').disabled = true; }
+    if (!hasMqtt) { $('joinBtn').disabled = true; $('hostBtn').disabled = true; }
   }
 
   // =====================================================================
   //  手機端
   // =====================================================================
   let roomCode = cleanCode(qs.get('room'));
-  let peer = null, conn = null, retryTimer = null, state = null, view = '', pending = 0, localTaps = 0;
-  let myName = store.get('derby-name') || '', wantTable = null, joinErrKey = '', phoneErr = '', everConnected = false;
+  const brokerIdx = Math.max(0, Math.min(BROKERS.length - 1, Number(qs.get('b')) || 0));
+  let client = null, online = false, state = null, view = '', pending = 0, localTaps = 0, lastStateAt = 0, stateCount = 0;
+  let myName = store.get('derby-name') || '', wantTable = null, joinErrKey = '', phoneErr = '';
+  const phoneBase = () => TOPIC(roomCode);
 
   function startPlayer() {
-    if (!hasPeer) { phoneErr = 'noPeer'; renderPhone(); return; }
-    phoneErr = ''; renderPhone();
-    const p = new Peer();
-    const timer = setTimeout(() => { if (!conn && !everConnected) { phoneErr = 'connFail'; renderPhone(); } }, 15000);
-    p.on('open', () => { peer = p; connectRoom(() => clearTimeout(timer)); });
-    p.on('error', e => {
-      if (e.type === 'peer-unavailable') {
-        if (!everConnected) { clearTimeout(timer); phoneErr = 'notFound'; renderPhone(); }
-        return; // 重連期間暫時找不到電視：等下一次重試
-      }
-      if (!everConnected) { clearTimeout(timer); phoneErr = 'connFail'; renderPhone(); }
+    if (!hasMqtt) { phoneErr = 'noPeer'; renderPhone(); return; }
+    // 枱號優先次序：網址的 &t=枱號（每枱專屬 QR Code）＞ 上次在這個房間揀的枱
+    const qt = Number(qs.get('t'));
+    const saved = store.get('derby-table-' + roomCode);
+    if (Number.isInteger(qt) && qt >= 1 && qt <= 8) { wantTable = qt - 1; store.set('derby-table-' + roomCode, String(wantTable)); }
+    else if (saved != null) wantTable = Number(saved);
+    renderPhone();
+    client = mqttConnect(brokerIdx, {
+      connect: () => {
+        online = true; statusEl.innerHTML = '';
+        client.subscribe([phoneBase() + '/s', phoneBase() + '/to/' + cid], { qos: 0 });
+        if (wantTable != null) sendJoin();
+      },
+      offline: () => { online = false; statusEl.innerHTML = T.reconnect; },
+      message: (topic, m) => {
+        if (topic.endsWith('/s')) onState(m);
+        else if (m.t === 'err') { joinErrKey = m.code === 'busy' ? 'errBusy' : m.code === 'full' ? 'errFull' : ''; wantTable = null; view = ''; renderPhone(); }
+      },
     });
-    p.on('disconnected', () => { if (peer === p && !p.destroyed) { try { p.reconnect(); } catch {} } });
+    // 12 秒內都收不到電視的訊息：提示「電視未開房」，但繼續等，電視一開房就會自動連上
+    setTimeout(() => { if (stateCount < 2) { phoneErr = 'notFound'; view = ''; renderPhone(); } }, 12000);
   }
 
-  function connectRoom(onFirstOpen) {
-    if (!peer) return;
-    const c = peer.connect(PREFIX + roomCode.toLowerCase(), { reliable: true, metadata: { cid } });
-    c.on('open', () => {
-      conn = c; everConnected = true; phoneErr = ''; statusEl.innerHTML = '';
-      if (onFirstOpen) { onFirstOpen(); onFirstOpen = null; }
-      // 枱號優先次序：網址的 &t=枱號（每枱專屬 QR Code）＞ 上次在這個房間揀的枱
-      const qt = Number(qs.get('t'));
-      const t = store.get('derby-table-' + roomCode);
-      if (wantTable == null && Number.isInteger(qt) && qt >= 1 && qt <= 8) { wantTable = qt - 1; qs.delete('t'); }
-      else if (t != null && wantTable == null) wantTable = Number(t);
-      if (wantTable != null) send({ t: 'join', table: wantTable, name: myName });
-      view = ''; renderPhone();
-    });
-    c.on('data', onHostMsg);
-    c.on('close', () => {
-      if (conn !== c) return;
-      conn = null; statusEl.innerHTML = T.reconnect;
-      clearTimeout(retryTimer); retryTimer = setTimeout(() => connectRoom(), 2500);
-    });
-    c.on('error', () => {});
-  }
-  function send(m) { try { if (conn && conn.open) conn.send(m); } catch {} }
-
-  function onHostMsg(m) {
-    if (!m || typeof m !== 'object') return;
-    if (m.t === 's') { state = m.s; renderPhone(); return; }
-    if (m.t === 'err') { joinErrKey = m.code === 'busy' ? 'errBusy' : m.code === 'full' ? 'errFull' : ''; wantTable = null; view = ''; renderPhone(); }
+  function onState(m) {
+    if (!m || !Array.isArray(m.tables)) return;
+    const p = m.pl && m.pl[cid];
+    m.me = p ? { table: p[0], taps: p[1], mvp: p[2] } : null;
+    state = m; lastStateAt = Date.now(); stateCount++;
+    if (phoneErr === 'notFound' && stateCount >= 2) { phoneErr = ''; view = ''; }
+    renderPhone();
   }
 
-  // 每 150 毫秒把累積的點擊送去電視
-  setInterval(() => { if (pending > 0 && conn && conn.open) { const n = pending; pending = 0; send({ t: 'tap', n }); } }, 150);
+  function send(m) {
+    if (!client || !online) return;
+    try { client.publish(phoneBase() + '/u', JSON.stringify(Object.assign({ c: cid }, m)), { qos: 0 }); } catch {}
+  }
+  const sendJoin = () => send({ t: 'join', table: wantTable, name: myName });
+
+  // 每 250 毫秒把累積的點擊送去電視
+  setInterval(() => { if (pending > 0 && online) { const n = pending; pending = 0; send({ t: 'tap', n }); } }, 250);
+  // 每秒檢查：入枱未確認就重送；每 2.5 秒報到一次；電視太久無訊息就提示
+  let hbTick = 0;
+  setInterval(() => {
+    if (!roomCode || !online) return;
+    if (wantTable != null && (!state || !state.me || state.me.table !== wantTable)) sendJoin();
+    else if (++hbTick % 3 === 0) send({ t: 'hb' });
+    if (stateCount >= 2) statusEl.innerHTML = Date.now() - lastStateAt > 5000 ? T.hostGone : '';
+  }, 1000);
+  window.addEventListener('pagehide', () => send({ t: 'bye' }));
 
   function hit(e) {
     e.preventDefault();
@@ -522,34 +542,45 @@ input,select{font:inherit;font-size:17px;width:100%;padding:13px;border-radius:1
   }
 
   function startHost(n) {
-    if (!hasPeer) return;
+    if (!hasMqtt) return;
     store.set('derby-table-count', String(n));
     landingMsg = T.opening; const lm = $('landMsg'); if (lm) lm.innerHTML = landingMsg;
     ['joinBtn', 'hostBtn'].forEach(id => { const b = $(id); if (b) b.disabled = true; });
+    // 沿用上次的房間代碼（預先印好的 QR Code 仍然有效）
     const saved = cleanCode(store.get('derby-host-code'));
-    const tryOpen = attempt => {
-      // 先沿用上次的代碼（預先印好的 QR Code 仍然有效）；被佔用就稍後再試，多次失敗才換新代碼
-      const code = saved.length === 4 && attempt < 4 ? saved : randCode();
-      const p = new Peer(PREFIX + code.toLowerCase());
-      p.on('open', () => { store.set('derby-host-code', code); if (!host) enterHost(p, code, n); else $('tvConn').innerHTML = T.tvOk; });
-      p.on('connection', onPlayerConn);
-      p.on('error', e => {
-        if (e.type === 'unavailable-id' && attempt < 8) { p.destroy(); setTimeout(() => tryOpen(attempt + 1), attempt < 4 ? 2500 : 0); return; }
-        if (!host) {
-          landingMsg = T.openFail(e.type); const m = $('landMsg'); if (m) m.innerHTML = landingMsg;
-          ['joinBtn', 'hostBtn'].forEach(id => { const b = $(id); if (b) b.disabled = false; }); p.destroy();
-        }
+    const code = saved.length === 4 ? saved : randCode();
+    store.set('derby-host-code', code);
+    const tryBroker = i => {
+      const c = mqttConnect(i, {
+        connect: () => {
+          c.subscribe(TOPIC(code) + '/u', { qos: 0 });
+          if (!host) enterHost(c, code, n, i);
+          $('tvConn').innerHTML = T.tvOk;
+        },
+        offline: () => { if (host && host.client === c) $('tvConn').innerHTML = T.tvBad; },
+        message: (topic, m) => { if (host && host.client === c) onPlayerMsg(m); },
       });
-      p.on('disconnected', () => { if (host && host.peer === p && !p.destroyed) { $('tvConn').innerHTML = T.tvBad; try { p.reconnect(); } catch {} } });
+      // 連唔到這個中轉站就試下一個（手機會跟隨 QR Code 入面的 &b= 用同一個）
+      setTimeout(() => {
+        if (host) return;
+        try { c.end(true); } catch {}
+        if (i + 1 < BROKERS.length) tryBroker(i + 1);
+        else {
+          landingMsg = T.openFail('timeout'); const m = $('landMsg'); if (m) m.innerHTML = landingMsg;
+          ['joinBtn', 'hostBtn'].forEach(id => { const b = $(id); if (b) b.disabled = false; });
+        }
+      }, 12000);
     };
-    tryOpen(0);
+    tryBroker(0);
   }
 
-  function enterHost(p, code, n) {
-    host = { peer: p, code, n, players: new Map(), raceNo: 1 };
+  function enterHost(c, code, n, b) {
+    host = { client: c, code, n, b, base: TOPIC(code), players: new Map(), raceNo: 1 };
     host.race = freshRace(1);
     $('phoneShell').hidden = true; $('tv').hidden = false;
-    const url = baseUrl() + '?room=' + code;
+    const url = baseUrl() + '?room=' + code + (b ? '&b=' + b : '');
+    // 關閉電視頁面時清走保留的狀態，手機會即時知道電視已離線
+    window.addEventListener('pagehide', () => { try { c.publish(host.base + '/s', '', { qos: 0, retain: true }); } catch {} });
     ['roomCode', 'roomCodeBig'].forEach(id => { $(id).textContent = code; });
     ['joinUrl', 'joinUrlBig'].forEach(id => { $(id).textContent = url.replace(/^https?:\/\//, ''); });
     try { $('qr').innerHTML = qrSvg(url); } catch { $('qr').innerHTML = `<b style="font-size:40px">${code}</b>`; }
@@ -559,57 +590,50 @@ input,select{font:inherit;font-size:17px;width:100%;padding:13px;border-radius:1
     history.replaceState(null, '', location.pathname + '?host=1');
     $('tvConn').innerHTML = T.tvOk;
     setInterval(hostTick, 50);
-    setInterval(broadcastState, 200);
+    setInterval(broadcastState, 250);
     setInterval(() => renderTv(snapshot()), 100);
     $('hint').innerHTML = T.hintIdle;
     renderTv(snapshot());
   }
 
-  function onPlayerConn(c) {
-    const pcid = String((c.metadata || {}).cid || '').slice(0, 20);
-    c.on('open', () => {
-      if (!host || !pcid) { c.close(); return; }
-      let P = host.players.get(pcid);
-      if (!P) {
-        if (host.players.size >= MAX_PLAYERS) { try { c.send({ t: 'err', code: 'full' }); } catch {} setTimeout(() => c.close(), 500); return; }
-        P = { cid: pcid, name: '', table: null, conn: null, online: false, taps: 0, sec: 0, secN: 0 };
-        host.players.set(pcid, P);
-      }
-      if (P.conn && P.conn !== c) { try { P.conn.close(); } catch {} }
-      P.conn = c; P.online = true;
-      sendState(P, snapshot());
-    });
-    c.on('data', m => {
-      const P = host && host.players.get(pcid); if (!P || P.conn !== c || !m || typeof m !== 'object') return;
-      const R = host.race;
-      if (m.t === 'join') {
-        const table = Number(m.table);
-        if (!Number.isInteger(table) || table < 0 || table >= host.n) return;
-        if ((R.phase === 'race' || R.phase === 'count') && P.table != null && P.table !== table) { try { c.send({ t: 'err', code: 'busy' }); } catch {} return; }
-        P.table = table;
-        P.name = String(m.name || '').replace(/[\u0000-\u001f<>]/g, '').trim().slice(0, 12);
-        sendState(P, snapshot());
-        return;
-      }
-      if (m.t === 'tap') {
-        let k = Math.max(0, Math.min(40, Math.floor(Number(m.n) || 0)));
-        if (R.phase !== 'race' || P.table == null || R.finish[P.table] != null || k <= 0) return;
-        const sec = Math.floor(Date.now() / 1000);
-        if (P.sec !== sec) { P.sec = sec; P.secN = 0; }
-        k = Math.min(k, MAX_TAPS_PER_SEC - P.secN);
-        if (k > 0) { P.secN += k; P.taps += k; R.pending[P.table] += k; }
-      }
-    });
-    c.on('close', () => {
-      const P = host && host.players.get(pcid); if (!P || P.conn !== c) return;
-      P.online = false; P.conn = null;
-    });
-    c.on('error', () => {});
+  const isOnline = P => Date.now() - P.lastSeen < 7000;
+  function sendTo(pcid, m) { try { host.client.publish(host.base + '/to/' + pcid, JSON.stringify(m), { qos: 0 }); } catch {} }
+
+  function onPlayerMsg(m) {
+    if (!m || typeof m !== 'object') return;
+    const pcid = String(m.c || '');
+    if (!/^[a-z0-9]{6,20}$/.test(pcid)) return;
+    let P = host.players.get(pcid);
+    if (!P) {
+      if (m.t === 'bye') return;
+      if (host.players.size >= MAX_PLAYERS) { sendTo(pcid, { t: 'err', code: 'full' }); return; }
+      P = { cid: pcid, name: '', table: null, lastSeen: 0, taps: 0, sec: 0, secN: 0 };
+      host.players.set(pcid, P);
+    }
+    if (m.t === 'bye') { P.lastSeen = 0; return; }
+    P.lastSeen = Date.now();
+    const R = host.race;
+    if (m.t === 'join') {
+      const table = Number(m.table);
+      if (!Number.isInteger(table) || table < 0 || table >= host.n) return;
+      if ((R.phase === 'race' || R.phase === 'count') && P.table != null && P.table !== table) { sendTo(pcid, { t: 'err', code: 'busy' }); return; }
+      P.table = table;
+      P.name = String(m.name || '').replace(/[\u0000-\u001f<>]/g, '').trim().slice(0, 12);
+      return;
+    }
+    if (m.t === 'tap') {
+      let k = Math.max(0, Math.min(40, Math.floor(Number(m.n) || 0)));
+      if (R.phase !== 'race' || P.table == null || R.finish[P.table] != null || k <= 0) return;
+      const sec = Math.floor(Date.now() / 1000);
+      if (P.sec !== sec) { P.sec = sec; P.secN = 0; }
+      k = Math.min(k, MAX_TAPS_PER_SEC - P.secN);
+      if (k > 0) { P.secN += k; P.taps += k; R.pending[P.table] += k; }
+    }
   }
 
   function tableCounts() {
     const c = Array(host.n).fill(0);
-    for (const P of host.players.values()) if (P.online && P.table != null) c[P.table]++;
+    for (const P of host.players.values()) if (isOnline(P) && P.table != null) c[P.table]++;
     return c;
   }
 
@@ -665,14 +689,16 @@ input,select{font:inherit;font-size:17px;width:100%;padding:13px;border-radius:1
     };
   }
 
-  function sendState(P, snap) {
-    if (!P.conn || !P.conn.open) return;
-    const R = host.race;
-    const me = { table: P.table, taps: P.taps, mvp: R.phase === 'done' ? R.top.findIndex(x => x.cid === P.cid) : -1 };
-    const s = Object.assign({}, snap, { me, top: null });
-    try { P.conn.send({ t: 's', s }); } catch {}
+  // 全場共用一份狀態（保留訊息：新加入的手機即時收到），每位玩家的枱號、按數、最快手指名次放在 pl
+  function broadcastState() {
+    const R = host.race, snap = snapshot(), pl = {}, now = Date.now();
+    for (const P of host.players.values()) {
+      if (P.table == null || now - P.lastSeen > 60000) continue;
+      pl[P.cid] = [P.table, P.taps, R.phase === 'done' ? R.top.findIndex(x => x.cid === P.cid) : -1];
+    }
+    snap.pl = pl; snap.top = null;
+    try { host.client.publish(host.base + '/s', JSON.stringify(snap), { qos: 0, retain: true }); } catch {}
   }
-  function broadcastState() { const snap = snapshot(); for (const P of host.players.values()) if (P.online) sendState(P, snap); }
 
   // ----- 電視畫面 -----
   let lanes = [], tvLastPhase = '', lastCountdown = -1, lastCallAt = 0, announced = false, lobbySig = '';
@@ -714,7 +740,7 @@ input,select{font:inherit;font-size:17px;width:100%;padding:13px;border-radius:1
   function renderLobby(s) {
     // 每枱人數與名單：只在有變動時重畫
     const groups = Array.from({ length: host.n }, () => []);
-    for (const P of host.players.values()) if (P.online && P.table != null) groups[P.table].push(P.name);
+    for (const P of host.players.values()) if (isOnline(P) && P.table != null) groups[P.table].push(P.name);
     const sig = JSON.stringify(groups);
     if (sig === lobbySig) return;
     lobbySig = sig;
@@ -828,7 +854,7 @@ input,select{font:inherit;font-size:17px;width:100%;padding:13px;border-radius:1
   //  啟動
   // =====================================================================
   if (roomCode.length === 4) startPlayer();
-  else if (qs.get('host') === '1' && hasPeer) { renderLanding(); startHost(Number(store.get('derby-table-count')) || DEFAULT_TABLES); }
+  else if (qs.get('host') === '1' && hasMqtt) { renderLanding(); startHost(Number(store.get('derby-table-count')) || DEFAULT_TABLES); }
   else renderLanding();
 })();
 </script>

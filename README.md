@@ -37,8 +37,12 @@
 - 一個房間最多 120 人。
 - 一般手速下，大約 20 秒跑完一場。
 
+## 事前綵排
+
+電視開房後，用另一個分頁或另一部電腦開啟 `https://tengfanfan1031.github.io/tap-derby/sim.html?room=房間代碼&n=40&auto=1`，就會模擬 40 位同事入枱，比賽時自動狂按。模擬頁要保持在前台，否則瀏覽器會減慢背景分頁，模擬手速會偏低。
+
 ## 技術
 
-只有一個 `index.html`，不需要伺服器或帳號。多人連線使用 [PeerJS](https://peerjs.com/)（WebRTC）：每部手機直接連到電視電腦，比賽邏輯和名次都在電視上計算。
+只有一個 `index.html`，不需要伺服器或帳號。比賽邏輯和名次都在電視上計算；電視與手機之間經公開的 MQTT 中轉站（WebSocket，預設 HiveMQ 公開 broker，連不上會自動改用 EMQX 或 Mosquitto）傳送訊息，所以同事用 Wi-Fi 或 4G／5G 都能連上。
 
 `local-server/` 是沒有互聯網時的後備版本：用 Node.js 在電腦上運行伺服器，同事連同一個 Wi-Fi 就可以玩（執行 `node local-server/server.js`）。

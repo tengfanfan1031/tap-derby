@@ -1,0 +1,75 @@
+<!doctype html>
+<html lang="zh-Hant">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>搖搖賽馬 綵排模擬</title>
+<style>
+:root{--bg:#0a1712;--ink:#f1ecdc;--muted:#93ad9f;--gold:#e9b72f}
+body{background:var(--bg);color:var(--ink);font:15px/1.5 system-ui,"Microsoft JhengHei",sans-serif;padding:20px max(16px,env(safe-area-inset-left,0px))}
+h1{font-size:22px;margin:0 0 8px;color:var(--gold)}
+p{color:var(--muted);max-width:60ch}
+input{font:inherit;padding:8px;border-radius:8px;border:1px solid #2c4a3c;background:#0f241b;color:var(--ink);width:7em}
+button{font:inherit;font-weight:700;padding:8px 16px;border-radius:8px;border:0;background:var(--gold);color:#0a1712;cursor:pointer}
+pre{background:#0f241b;padding:12px;border-radius:8px;white-space:pre-wrap}
+</style>
+</head>
+<body>
+<h1>搖搖賽馬 綵排模擬 Rehearsal</h1>
+<p>在電視開房後，於另一部電腦或分頁開啟這頁，輸入房間代碼，就會模擬多位同事掃碼入枱，並在比賽時自動狂按。用來事前測試連線是否順暢。</p>
+<p>
+  <label>房間代碼 <input id="room" maxlength="4"></label>
+  <label>人數 <input id="n" type="number" value="40" min="1" max="100"></label>
+  <label>中轉站 b <input id="b" type="number" value="0" min="0" max="2"></label>
+  <button id="go">開始模擬</button>
+</p>
+<pre id="log">未開始</pre>
+<script src="https://unpkg.com/mqtt@5.10.1/dist/mqtt.min.js"></script>
+<script>
+(() => {
+  const BROKERS = ['wss://broker.hivemq.com:8884/mqtt', 'wss://broker.emqx.io:8084/mqtt', 'wss://test.mosquitto.org:8081/mqtt'];
+  const qs = new URLSearchParams(location.search);
+  const $ = id => document.getElementById(id);
+  $('room').value = (qs.get('room') || '').toUpperCase();
+  if (qs.get('n')) $('n').value = qs.get('n');
+  if (qs.get('b')) $('b').value = qs.get('b');
+  const names = ['阿明', 'Karen', '小芳', 'Jason', '阿傑', 'Mandy', '大衛', 'Ivy', '阿強', 'Tom', 'Peggy', '阿詩'];
+  window.sim = { connected: 0, phase: '-', sent: 0 };
+
+  $('go').onclick = () => {
+    const code = $('room').value.trim().toLowerCase(), N = Number($('n').value) || 40, b = Number($('b').value) || 0;
+    if (code.length !== 4) { $('log').textContent = '請輸入 4 碼房間代碼'; return; }
+    $('go').disabled = true;
+    const base = `tapderby-tw-v2/${code}`;
+    let tables = 5;
+    for (let i = 0; i < N; i++) {
+      const cid = 'sim' + i + Math.random().toString(36).slice(2, 7);
+      const bot = { cid, table: i % tables, speed: 4 + Math.random() * 5, buf: 0, name: names[i % names.length] + (i + 1) };
+      setTimeout(() => {
+        const c = mqtt.connect(BROKERS[b], { clientId: 'td' + cid, clean: true, reconnectPeriod: 2000 });
+        let phase = 'idle', joined = false;
+        const pub = m => { try { c.publish(base + '/u', JSON.stringify(Object.assign({ c: cid }, m))); sim.sent++; } catch {} };
+        c.on('connect', () => { sim.connected++; c.subscribe(base + '/s'); });
+        c.on('close', () => {});
+        c.on('message', (t, buf) => {
+          let s; try { s = JSON.parse(buf.toString()); } catch { return; }
+          phase = s.phase; sim.phase = s.phase;
+          if (s.tables && s.tables.length !== tables) { tables = s.tables.length; bot.table = i % tables; }
+          joined = !!(s.pl && s.pl[cid] && s.pl[cid][0] === bot.table);
+        });
+        setInterval(() => { if (!joined) pub({ t: 'join', table: bot.table, name: bot.name }); else pub({ t: 'hb' }); }, 2000);
+        setInterval(() => {
+          if (phase !== 'race') return;
+          bot.buf += bot.speed * 0.25 * (0.6 + Math.random() * 0.8);
+          const n = Math.floor(bot.buf); bot.buf -= n;
+          if (n > 0) pub({ t: 'tap', n });
+        }, 250);
+      }, i * 60);
+    }
+    setInterval(() => { $('log').textContent = `已連線 ${sim.connected} / ${N} 位模擬玩家\n電視狀態：${sim.phase}\n已送出訊息：${sim.sent}`; }, 500);
+  };
+  if (qs.get('auto') === '1') $('go').click();
+})();
+</script>
+</body>
+</html>
