@@ -20,14 +20,14 @@ pre{background:#0f241b;padding:12px;border-radius:8px;white-space:pre-wrap}
 <p>
   <label>房間代碼 <input id="room" maxlength="4"></label>
   <label>人數 <input id="n" type="number" value="40" min="1" max="100"></label>
-  <label>中轉站 b <input id="b" type="number" value="0" min="0" max="2"></label>
+  <label>中轉站 <input id="b" value="0"></label>
   <button id="go">開始模擬</button>
 </p>
 <pre id="log">未開始</pre>
 <script src="https://unpkg.com/mqtt@5.10.1/dist/mqtt.min.js"></script>
 <script>
 (() => {
-  const BROKERS = ['wss://broker.hivemq.com:8884/mqtt', 'wss://broker.emqx.io:8084/mqtt', 'wss://test.mosquitto.org:8081/mqtt'];
+  const BROKERS = ['wss://test.mosquitto.org:8081/mqtt', 'wss://broker.emqx.io:8084/mqtt', 'wss://broker.hivemq.com:8884/mqtt'];
   const qs = new URLSearchParams(location.search);
   const $ = id => document.getElementById(id);
   $('room').value = (qs.get('room') || '').toUpperCase();
@@ -37,16 +37,22 @@ pre{background:#0f241b;padding:12px;border-radius:8px;white-space:pre-wrap}
   window.sim = { connected: 0, phase: '-', sent: 0 };
 
   $('go').onclick = () => {
-    const code = $('room').value.trim().toLowerCase(), N = Number($('n').value) || 40, b = Number($('b').value) || 0;
+    const code = $('room').value.trim().toLowerCase(), N = Number($('n').value) || 40;
+    // 模擬玩家用的中轉站：預設 0（和真手機一樣先用第一個）；可填 0,1,2 分散測試
+    const blist = $('b').value.split(',').map(Number).filter(x => x >= 0 && x < BROKERS.length);
+    const brokerOf = i => (blist.length ? blist : [0, 1, 2])[i % (blist.length || 3)];
     if (code.length !== 4) { $('log').textContent = '請輸入 4 碼房間代碼'; return; }
     $('go').disabled = true;
     const base = `tapderby-tw-v2/${code}`;
     let tables = 5;
+    // 可選：sizes=8,5,10,7,10 指定每枱人數（測試人數不均）；否則平均分配
+    const sizes = (qs.get('sizes') || '').split(',').map(Number).filter(n => n > 0);
+    const tableOf = i => { if (!sizes.length) return i % tables; let k = i; for (let t = 0; t < sizes.length; t++) { if (k < sizes[t]) return t; k -= sizes[t]; } return i % tables; };
     for (let i = 0; i < N; i++) {
       const cid = 'sim' + i + Math.random().toString(36).slice(2, 7);
-      const bot = { cid, table: i % tables, speed: 4 + Math.random() * 5, buf: 0, name: names[i % names.length] + (i + 1) };
+      const bot = { cid, table: tableOf(i), speed: 4 + Math.random() * 5, buf: 0, name: names[i % names.length] + (i + 1) };
       setTimeout(() => {
-        const c = mqtt.connect(BROKERS[b], { clientId: 'td' + cid, clean: true, reconnectPeriod: 2000 });
+        const c = mqtt.connect(BROKERS[brokerOf(i)], { clientId: 'td' + cid, clean: true, reconnectPeriod: 2000 });
         let phase = 'idle', joined = false;
         const pub = m => { try { c.publish(base + '/u', JSON.stringify(Object.assign({ c: cid }, m))); sim.sent++; } catch {} };
         c.on('connect', () => { sim.connected++; c.subscribe(base + '/s'); });
@@ -54,7 +60,7 @@ pre{background:#0f241b;padding:12px;border-radius:8px;white-space:pre-wrap}
         c.on('message', (t, buf) => {
           let s; try { s = JSON.parse(buf.toString()); } catch { return; }
           phase = s.phase; sim.phase = s.phase;
-          if (s.tables && s.tables.length !== tables) { tables = s.tables.length; bot.table = i % tables; }
+          if (s.tables && s.tables.length !== tables) { tables = s.tables.length; bot.table = tableOf(i) % tables; }
           joined = !!(s.pl && s.pl[cid] && s.pl[cid][0] === bot.table);
         });
         setInterval(() => { if (!joined) pub({ t: 'join', table: bot.table, name: bot.name }); else pub({ t: 'hb' }); }, 2000);

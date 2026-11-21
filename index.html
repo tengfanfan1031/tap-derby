@@ -152,6 +152,9 @@ input,select{font:inherit;font-size:17px;width:100%;padding:13px;border-radius:1
 .mvp-box .n{font-family:var(--display);font-variant-numeric:tabular-nums;color:var(--muted);margin-left:8px}
 .side{background:var(--panel);border:1px solid var(--line);border-radius:16px;padding:20px;display:flex;flex-direction:column;gap:10px;align-items:center;text-align:center;position:sticky;top:20px}
 .side h2{margin:0;font-size:22px;font-weight:900;line-height:1.25}
+.side-sec{display:flex;flex-direction:column;gap:10px;align-items:center;width:100%}
+.side-lock{font-size:22px;font-weight:900;color:var(--gold);line-height:1.3;padding:24px 0}
+.side-lock .en{font-size:.7em}
 .qr{background:#fff;padding:12px;border-radius:12px;width:100%;max-width:260px;aspect-ratio:1;display:grid;place-items:center;color:#0a1712}
 .qr svg{width:100%;height:100%;display:block}
 .room-code{font-family:var(--display);font-size:44px;font-weight:700;letter-spacing:.18em;line-height:1}
@@ -208,11 +211,14 @@ input,select{font:inherit;font-size:17px;width:100%;padding:13px;border-radius:1
       <div class="mvp-box" id="mvp" hidden><h2 data-i18n="mvpTitle"></h2><ol id="mvpList"></ol></div>
     </section>
     <aside class="side" id="side">
-      <h2 data-i18n="scan"></h2>
-      <div class="qr" id="qr"></div>
-      <div class="muted" data-i18n="roomCode"></div>
-      <div class="room-code" id="roomCode"></div>
-      <div class="url" id="joinUrl"></div>
+      <div class="side-sec" id="sideJoin">
+        <h2 data-i18n="scan"></h2>
+        <div class="qr" id="qr"></div>
+        <div class="muted" data-i18n="roomCode"></div>
+        <div class="room-code" id="roomCode"></div>
+        <div class="url" id="joinUrl"></div>
+      </div>
+      <div class="side-lock" id="sideLock" hidden data-i18n="raceLocked"></div>
       <div class="big-n" id="total">0</div>
       <div class="hint" data-i18n="joined"></div>
       <div class="hint" id="tvConn"></div>
@@ -245,7 +251,9 @@ input,select{font:inherit;font-size:17px;width:100%;padding:13px;border-radius:1
     hostGone:'電視暫時離線，等緊重新連線…',
     joinIntro:'輸入你的名字（可以唔填），再揀你坐緊嗰張枱。',
     joinedCount:n=>`已有 ${n} 人加入`, ready:'準備',
-    waitText:'等主持人人齊後開始比賽。開跑之後，用手指狂按個大掣！可以用兩隻手指輪流按。',
+    waitText:'等主持人人齊後開始比賽。開跑之後，用手指狂按個大掣！你張枱按全枱平均手速計，每個人按得快或慢都會影響成績。可以用兩隻手指輪流按。',
+    lockedBig:'請等下一場', lockedText:'比賽已經開始，不能中途加入。完場後會自動幫你入枱，參加下一場。',
+    raceLocked:'比賽進行中，暫停加入',
     totalNow:n=>`全場已有 <b class="tot">${n}</b> 人`, change:'轉枱',
     countText:'準備好手指！', go:'開跑！', tap:'按！', tapSub:'愈快愈好',
     myTaps:n=>`你按咗 <b class="myTaps">${n}</b> 下`, crossed:'已衝線！', nowPlace:k=>`暫時第 ${k}`,
@@ -257,9 +265,9 @@ input,select{font:inherit;font-size:17px;width:100%;padding:13px;border-radius:1
     phase:{idle:'等人入場',count:'準備',race:'比賽中',done:'完場'},
     start:'開始比賽', again:'再跑一場', stop:'提早完場', reset:'重設', fullscreen:'全螢幕',
     hintIdle:'人齊後按「開始比賽」，倒數 3 秒一齊開跑。請保持這個頁面開啟，電視就是房主。', hintNoPlayers:'未有人加入，請大家先掃 QR Code。',
-    scan:'遲到？掃描加入', scanBig:'坐幾號枱，就掃嗰張枱嘅 QR Code', roomCode:'房間代碼', joined:'人已加入',
-    lobbyHint:'等齊人之後，主持人按「開始比賽」，全場一齊開跑！',
-    tvOk:'房間已開放', tvBad:'與中轉站斷線，重新連線中…',
+    scan:'想參加下一場？掃描加入', scanBig:'坐幾號枱，就掃嗰張枱嘅 QR Code', roomCode:'房間代碼', joined:'人已加入',
+    lobbyHint:'人齊之後，主持人按「開始比賽」。每枱按全枱平均手速計，人多人少一樣公平，但每個人按得快或慢都會影響全枱成績！開跑後不能中途加入。',
+    tvOk:(k,n)=>`房間已開放（${k}/${n} 個中轉站連線中）`, tvBad:'與所有中轉站斷線，重新連線中…',
     players:n=>`${n} 人`, rate:(n,r)=>`${n} 人 · 每人 ${r} 下/秒`,
     time:(t,d)=>`${t} 秒${d?` · 慢 ${d} 秒`:''}`, dnf:p=>`未到終點 · 跑咗 ${p}%`,
     mvpTitle:'全場最快手指', anon:'無名英雄', taps:n=>`${n} 下`, waiting:'等緊同事入枱…',
@@ -281,7 +289,9 @@ input,select{font:inherit;font-size:17px;width:100%;padding:13px;border-radius:1
     hostGone:'The TV is offline. Waiting for it to reconnect…',
     joinIntro:'Enter your name (optional), then pick the table you\'re sitting at.',
     joinedCount:n=>`${n} joined`, ready:'Ready',
-    waitText:'The host starts the race when everyone is in. Then tap the big button as fast as you can! Try alternating two fingers.',
+    waitText:'The host starts the race when everyone is in. Then tap the big button as fast as you can! Your table moves at its average tapping speed, so everyone\'s speed counts. Try alternating two fingers.',
+    lockedBig:'Next race', lockedText:'The race has started, so you can\'t join now. You\'ll join your table automatically when it ends.',
+    raceLocked:'Race in progress. Joining is paused.',
     totalNow:n=>`Players in the room: <b class="tot">${n}</b>`, change:'Change table',
     countText:'Fingers ready!', go:'GO!', tap:'TAP!', tapSub:'Faster is better',
     myTaps:n=>`You tapped <b class="myTaps">${n}</b> times`, crossed:'Finished!', nowPlace:k=>`Now ${['1st','2nd','3rd'][k-1]||k+'th'}`,
@@ -293,9 +303,9 @@ input,select{font:inherit;font-size:17px;width:100%;padding:13px;border-radius:1
     phase:{idle:'Lobby',count:'Get ready',race:'Racing',done:'Finished'},
     start:'Start race', again:'Run again', stop:'End race now', reset:'Reset', fullscreen:'Full screen',
     hintIdle:'When everyone is in, tap Start. A 3-second countdown starts the race. Keep this page open: the TV hosts the room.', hintNoPlayers:'Nobody has joined yet. Ask everyone to scan the QR code.',
-    scan:'Late? Scan to join', scanBig:'Scan the QR code for the table you\'re sitting at', roomCode:'Room code', joined:'players joined',
-    lobbyHint:'Once everyone is in, the host taps Start and the whole room races together!',
-    tvOk:'Room is open', tvBad:'Lost the relay server. Reconnecting…',
+    scan:'Join the next race', scanBig:'Scan the QR code for the table you\'re sitting at', roomCode:'Room code', joined:'players joined',
+    lobbyHint:'When everyone is in, the host taps Start. Each table moves at its average tapping speed, so big and small tables are equal, but everyone\'s speed counts! No joining after the start.',
+    tvOk:(k,n)=>`Room is open (${k}/${n} relays connected)`, tvBad:'Lost all relay servers. Reconnecting…',
     players:n=>`${n} ${n===1?'player':'players'}`, rate:(n,r)=>`${n} players · ${r} taps/s each`,
     time:(t,d)=>`${t}s${d?` · +${d}s`:''}`, dnf:p=>`Did not finish · ${p}%`,
     mvpTitle:'Fastest fingers', anon:'Mystery tapper', taps:n=>`${n} taps`, waiting:'Waiting for players…',
@@ -338,7 +348,9 @@ input,select{font:inherit;font-size:17px;width:100%;padding:13px;border-radius:1
   // =====================================================================
   //  連線：經 MQTT 公開中轉站（WebSocket / 443 類連接埠），Wi-Fi 與 4G／5G 都能接通，不需帳號
   // =====================================================================
-  const BROKERS = ['wss://broker.hivemq.com:8884/mqtt', 'wss://broker.emqx.io:8084/mqtt', 'wss://test.mosquitto.org:8081/mqtt'];
+  // 次序 = 優先次序：全部手機先用第一個（同一路線才公平），收不到電視訊號才轉用後備
+  // 實測延遲：Mosquitto 約 0.2 秒、EMQX 約 0.4 秒、HiveMQ 約 0.6 秒（而且會限制同一網絡大量連線）
+  const BROKERS = ['wss://test.mosquitto.org:8081/mqtt', 'wss://broker.emqx.io:8084/mqtt', 'wss://broker.hivemq.com:8884/mqtt'];
   const TOPIC = code => `${PREFIX}v2/${code.toLowerCase()}`;
   const hasMqtt = typeof mqtt !== 'undefined';
   function mqttConnect(i, h) {
@@ -382,9 +394,10 @@ input,select{font:inherit;font-size:17px;width:100%;padding:13px;border-radius:1
   //  手機端
   // =====================================================================
   let roomCode = cleanCode(qs.get('room'));
-  const brokerIdx = Math.max(0, Math.min(BROKERS.length - 1, Number(qs.get('b')) || 0));
   let client = null, online = false, state = null, view = '', pending = 0, localTaps = 0, lastStateAt = 0, stateCount = 0;
   let myName = store.get('derby-name') || '', wantTable = null, joinErrKey = '', phoneErr = '';
+  // 先用第一個中轉站；8 秒收不到電視訊號就輪流轉用下一個
+  let brokerTry = 0, lastSwitch = 0;
   const phoneBase = () => TOPIC(roomCode);
 
   function startPlayer() {
@@ -395,26 +408,43 @@ input,select{font:inherit;font-size:17px;width:100%;padding:13px;border-radius:1
     if (Number.isInteger(qt) && qt >= 1 && qt <= 8) { wantTable = qt - 1; store.set('derby-table-' + roomCode, String(wantTable)); }
     else if (saved != null) wantTable = Number(saved);
     renderPhone();
-    client = mqttConnect(brokerIdx, {
-      connect: () => {
-        online = true; statusEl.innerHTML = '';
-        client.subscribe([phoneBase() + '/s', phoneBase() + '/to/' + cid], { qos: 0 });
-        if (wantTable != null) sendJoin();
-      },
-      offline: () => { online = false; statusEl.innerHTML = T.reconnect; },
-      message: (topic, m) => {
-        if (topic.endsWith('/s')) onState(m);
-        else if (m.t === 'err') { joinErrKey = m.code === 'busy' ? 'errBusy' : m.code === 'full' ? 'errFull' : ''; wantTable = null; view = ''; renderPhone(); }
-      },
-    });
+    connectPlayer();
     // 12 秒內都收不到電視的訊息：提示「電視未開房」，但繼續等，電視一開房就會自動連上
     setTimeout(() => { if (stateCount < 2) { phoneErr = 'notFound'; view = ''; renderPhone(); } }, 12000);
+    // 8 秒收不到電視訊號（中轉站連不上或限制連線）：轉用下一個中轉站
+    setInterval(() => {
+      const now = Date.now();
+      if (now - lastStateAt > 8000 && now - lastSwitch > 8000) { brokerTry = (brokerTry + 1) % BROKERS.length; connectPlayer(); }
+    }, 1000);
+  }
+
+  function connectPlayer() {
+    if (client) { const old = client; client = null; try { old.end(true); } catch {} }
+    online = false; lastSwitch = Date.now();
+    const c = mqttConnect(brokerTry, {
+      connect: () => {
+        if (client !== c) return;
+        online = true; statusEl.innerHTML = '';
+        c.subscribe([phoneBase() + '/s', phoneBase() + '/to/' + cid], { qos: 0 });
+        if (wantTable != null) sendJoin();
+      },
+      offline: () => { if (client === c) { online = false; statusEl.innerHTML = T.reconnect; } },
+      message: (topic, m) => {
+        if (client !== c) return;
+        if (topic.endsWith('/s')) onState(m);
+        else if (m.t === 'err') {
+          if (m.code === 'locked') return; // 比賽進行中：保留揀好的枱，完場後自動入枱（畫面顯示「請等下一場」）
+          joinErrKey = m.code === 'busy' ? 'errBusy' : m.code === 'full' ? 'errFull' : ''; wantTable = null; view = ''; renderPhone();
+        }
+      },
+    });
+    client = c;
   }
 
   function onState(m) {
     if (!m || !Array.isArray(m.tables)) return;
     const p = m.pl && m.pl[cid];
-    m.me = p ? { table: p[0], taps: p[1], mvp: p[2] } : null;
+    m.me = p ? { table: p[0], taps: p[1], mvp: p[2], inRace: !!p[3] } : null;
     state = m; lastStateAt = Date.now(); stateCount++;
     if (phoneErr === 'notFound' && stateCount >= 2) { phoneErr = ''; view = ''; }
     renderPhone();
@@ -426,8 +456,8 @@ input,select{font:inherit;font-size:17px;width:100%;padding:13px;border-radius:1
   }
   const sendJoin = () => send({ t: 'join', table: wantTable, name: myName });
 
-  // 每 250 毫秒把累積的點擊送去電視
-  setInterval(() => { if (pending > 0 && online) { const n = pending; pending = 0; send({ t: 'tap', n }); } }, 250);
+  // 每 400 毫秒把累積的點擊打包送去電視（減輕中轉站負擔）
+  setInterval(() => { if (pending > 0 && online) { const n = pending; pending = 0; send({ t: 'tap', n }); } }, 400);
   // 每秒檢查：入枱未確認就重送；每 2.5 秒報到一次；電視太久無訊息就提示
   let hbTick = 0;
   setInterval(() => {
@@ -460,7 +490,9 @@ input,select{font:inherit;font-size:17px;width:100%;padding:13px;border-radius:1
     if (!state) { if (view !== 'connecting') { app.innerHTML = `<p class="title">${T.title}</p><div class="grow"><p class="text">${T.connecting}</p></div>`; view = 'connecting'; } return; }
     const s = state, my = s.me && s.me.table != null && wantTable != null ? s.me.table : null;
     if (s.phase === 'count') localTaps = 0;
-    const v = my == null ? 'join' : s.phase;
+    const running = s.phase === 'count' || s.phase === 'race';
+    // 比賽期間未在參賽名單（遲到或剛掃碼）：顯示「請等下一場」，完場後自動入枱
+    const v = running && wantTable != null && !(s.me && s.me.inRace) ? 'locked' : my == null ? 'join' : s.phase;
     const key = [v, my, v === 'count' ? s.countdown : '', v === 'done' ? s.no : '', joinErrKey, s.tables.length].join('|');
     if (key === view) { livePhone(); return; }
     view = key;
@@ -484,6 +516,10 @@ input,select{font:inherit;font-size:17px;width:100%;padding:13px;border-radius:1
       app.innerHTML = `${meHtml(my)}<div class="grow"><div class="big">${T.ready}</div><p class="text">${T.waitText}</p></div>
         <p class="text">${T.totalNow(s.total)}</p><button class="ghost" id="change">${T.change}</button>`;
       $('change').onclick = () => { wantTable = null; joinErrKey = ''; view = ''; renderPhone(); };
+      return;
+    }
+    if (v === 'locked') {
+      app.innerHTML = `${meHtml(wantTable)}<div class="grow"><div class="big" style="font-size:56px">${T.lockedBig}</div><p class="text">${T.lockedText}</p></div>`;
       return;
     }
     if (v === 'count') {
@@ -538,7 +574,9 @@ input,select{font:inherit;font-size:17px;width:100%;padding:13px;border-radius:1
   function freshRace(no) {
     const n = host.n;
     return { no, phase: 'idle', countdownEnd: 0, startAt: 0, endAt: 0,
-      prog: Array(n).fill(0), rate: Array(n).fill(0), finish: Array(n).fill(null), pending: Array(n).fill(0), entered: Array(n).fill(false), top: [] };
+      prog: Array(n).fill(0), rate: Array(n).fill(0), finish: Array(n).fill(null), pending: Array(n).fill(0), entered: Array(n).fill(false), top: [],
+      rid: 0,                  // 這一場的編號：參賽者名單以此為準
+      size: Array(n).fill(0) }; // 倒數開始時鎖定的每枱參賽人數
   }
 
   function startHost(n) {
@@ -550,37 +588,45 @@ input,select{font:inherit;font-size:17px;width:100%;padding:13px;border-radius:1
     const saved = cleanCode(store.get('derby-host-code'));
     const code = saved.length === 4 ? saved : randCode();
     store.set('derby-host-code', code);
-    const tryBroker = i => {
+    // 電視同時連上所有中轉站：手機分散連到其中一個，任何一個出問題都不影響比賽
+    const clients = BROKERS.map((_, i) => {
       const c = mqttConnect(i, {
         connect: () => {
           c.subscribe(TOPIC(code) + '/u', { qos: 0 });
-          if (!host) enterHost(c, code, n, i);
-          $('tvConn').innerHTML = T.tvOk;
+          if (!host) enterHost(clients, code, n);
+          updateTvConn();
         },
-        offline: () => { if (host && host.client === c) $('tvConn').innerHTML = T.tvBad; },
-        message: (topic, m) => { if (host && host.client === c) onPlayerMsg(m); },
+        offline: () => updateTvConn(),
+        message: (topic, m) => { if (host) onPlayerMsg(m); },
       });
-      // 連唔到這個中轉站就試下一個（手機會跟隨 QR Code 入面的 &b= 用同一個）
-      setTimeout(() => {
-        if (host) return;
-        try { c.end(true); } catch {}
-        if (i + 1 < BROKERS.length) tryBroker(i + 1);
-        else {
-          landingMsg = T.openFail('timeout'); const m = $('landMsg'); if (m) m.innerHTML = landingMsg;
-          ['joinBtn', 'hostBtn'].forEach(id => { const b = $(id); if (b) b.disabled = false; });
-        }
-      }, 12000);
-    };
-    tryBroker(0);
+      return c;
+    });
+    setTimeout(() => {
+      if (host) return;
+      clients.forEach(c => { try { c.end(true); } catch {} });
+      landingMsg = T.openFail('timeout'); const m = $('landMsg'); if (m) m.innerHTML = landingMsg;
+      ['joinBtn', 'hostBtn'].forEach(id => { const b = $(id); if (b) b.disabled = false; });
+    }, 15000);
   }
 
-  function enterHost(c, code, n, b) {
-    host = { client: c, code, n, b, base: TOPIC(code), players: new Map(), raceNo: 1 };
+  function updateTvConn() {
+    if (!host) return;
+    const k = host.clients.filter(c => c.connected).length;
+    $('tvConn').innerHTML = k ? T.tvOk(k, BROKERS.length) : T.tvBad;
+  }
+
+  // 發布到每一個已連線的中轉站
+  function publishAll(topic, payload, retain) {
+    for (const c of host.clients) if (c.connected) { try { c.publish(topic, payload, { qos: 0, retain: !!retain }); } catch {} }
+  }
+
+  function enterHost(clients, code, n) {
+    host = { clients, code, n, base: TOPIC(code), players: new Map(), raceNo: 1 };
     host.race = freshRace(1);
     $('phoneShell').hidden = true; $('tv').hidden = false;
-    const url = baseUrl() + '?room=' + code + (b ? '&b=' + b : '');
+    const url = baseUrl() + '?room=' + code;
     // 關閉電視頁面時清走保留的狀態，手機會即時知道電視已離線
-    window.addEventListener('pagehide', () => { try { c.publish(host.base + '/s', '', { qos: 0, retain: true }); } catch {} });
+    window.addEventListener('pagehide', () => publishAll(host.base + '/s', '', true));
     ['roomCode', 'roomCodeBig'].forEach(id => { $(id).textContent = code; });
     ['joinUrl', 'joinUrlBig'].forEach(id => { $(id).textContent = url.replace(/^https?:\/\//, ''); });
     try { $('qr').innerHTML = qrSvg(url); } catch { $('qr').innerHTML = `<b style="font-size:40px">${code}</b>`; }
@@ -588,7 +634,7 @@ input,select{font:inherit;font-size:17px;width:100%;padding:13px;border-radius:1
     try { navigator.wakeLock?.request('screen').catch(() => {}); } catch {}
     document.addEventListener('visibilitychange', () => { if (document.visibilityState === 'visible') try { navigator.wakeLock?.request('screen').catch(() => {}); } catch {} });
     history.replaceState(null, '', location.pathname + '?host=1');
-    $('tvConn').innerHTML = T.tvOk;
+    updateTvConn();
     setInterval(hostTick, 50);
     setInterval(broadcastState, 250);
     setInterval(() => renderTv(snapshot()), 100);
@@ -597,7 +643,7 @@ input,select{font:inherit;font-size:17px;width:100%;padding:13px;border-radius:1
   }
 
   const isOnline = P => Date.now() - P.lastSeen < 7000;
-  function sendTo(pcid, m) { try { host.client.publish(host.base + '/to/' + pcid, JSON.stringify(m), { qos: 0 }); } catch {} }
+  function sendTo(pcid, m) { publishAll(host.base + '/to/' + pcid, JSON.stringify(m)); }
 
   function onPlayerMsg(m) {
     if (!m || typeof m !== 'object') return;
@@ -616,14 +662,18 @@ input,select{font:inherit;font-size:17px;width:100%;padding:13px;border-radius:1
     if (m.t === 'join') {
       const table = Number(m.table);
       if (!Number.isInteger(table) || table < 0 || table >= host.n) return;
-      if ((R.phase === 'race' || R.phase === 'count') && P.table != null && P.table !== table) { sendTo(pcid, { t: 'err', code: 'busy' }); return; }
+      if (R.phase === 'race' || R.phase === 'count') {
+        // 倒數及比賽期間不准中途加入；參賽者亦不可以轉枱
+        if (P.inRace !== R.rid) { sendTo(pcid, { t: 'err', code: 'locked' }); return; }
+        if (P.table !== table) { sendTo(pcid, { t: 'err', code: 'busy' }); return; }
+      }
       P.table = table;
       P.name = String(m.name || '').replace(/[\u0000-\u001f<>]/g, '').trim().slice(0, 12);
       return;
     }
     if (m.t === 'tap') {
       let k = Math.max(0, Math.min(40, Math.floor(Number(m.n) || 0)));
-      if (R.phase !== 'race' || P.table == null || R.finish[P.table] != null || k <= 0) return;
+      if (R.phase !== 'race' || P.inRace !== R.rid || P.table == null || R.finish[P.table] != null || k <= 0) return;
       const sec = Math.floor(Date.now() / 1000);
       if (P.sec !== sec) { P.sec = sec; P.secN = 0; }
       k = Math.min(k, MAX_TAPS_PER_SEC - P.secN);
@@ -639,17 +689,16 @@ input,select{font:inherit;font-size:17px;width:100%;padding:13px;border-radius:1
 
   function hostTick() {
     const R = host.race, t = Date.now();
-    if (R.phase === 'count' && t >= R.countdownEnd) {
-      R.phase = 'race'; R.startAt = t; R.pending.fill(0);
-      R.entered = tableCounts().map(n => n > 0);
-      for (const P of host.players.values()) P.taps = 0;
-    }
+    if (R.phase === 'count' && t >= R.countdownEnd) { R.phase = 'race'; R.startAt = t; R.lastTick = t; R.pending.fill(0); }
     if (R.phase !== 'race') return;
-    const counts = tableCounts(), dt = 0.05, elapsed = (t - R.startAt) / 1000;
+    // 用實際經過的時間計算手速（電腦忙碌時計時器會延遲，固定 0.05 秒會令顯示的手速偏高）
+    const dt = Math.max(0.02, (t - (R.lastTick || t)) / 1000), elapsed = (t - R.startAt) / 1000;
+    R.lastTick = t;
     for (let i = 0; i < host.n; i++) {
       if (R.finish[i] != null) { R.pending[i] = 0; continue; }
-      if (counts[i] > 0) R.entered[i] = true;
-      const per = R.pending[i] / Math.max(1, counts[i]);
+      // 全枱總按數 ÷ 開賽時鎖定的人數 = 平均手速：人多人少一樣公平，但每個人按得快慢都會影響全枱；
+      // 有人停手或斷線仍計入人數，會拖慢全枱
+      const per = R.pending[i] / Math.max(1, R.size[i]);
       R.pending[i] = 0;
       R.rate[i] = R.rate[i] * 0.92 + (per / dt) * 0.08;
       R.prog[i] = Math.min(100, R.prog[i] + per * STEP);
@@ -662,7 +711,7 @@ input,select{font:inherit;font-size:17px;width:100%;padding:13px;border-radius:1
   function endRace() {
     const R = host.race;
     R.phase = 'done'; R.endAt = Date.now();
-    R.top = [...host.players.values()].filter(P => P.taps > 0).sort((a, b) => b.taps - a.taps).slice(0, 5)
+    R.top = [...host.players.values()].filter(P => P.inRace === R.rid && P.taps > 0).sort((a, b) => b.taps - a.taps).slice(0, 5)
       .map(P => ({ cid: P.cid, name: P.name, table: P.table, taps: P.taps }));
   }
 
@@ -677,7 +726,9 @@ input,select{font:inherit;font-size:17px;width:100%;padding:13px;border-radius:1
   }
 
   function snapshot() {
-    const R = host.race, counts = tableCounts(), t = Date.now();
+    const R = host.race, t = Date.now();
+    // 等人入場時顯示即時人數；倒數、比賽及完場時顯示鎖定的參賽人數
+    const counts = R.phase === 'idle' ? tableCounts() : R.size;
     return {
       no: R.no, phase: R.phase,
       countdown: R.phase === 'count' ? Math.max(0, Math.ceil((R.countdownEnd - t) / 1000)) : 0,
@@ -694,10 +745,10 @@ input,select{font:inherit;font-size:17px;width:100%;padding:13px;border-radius:1
     const R = host.race, snap = snapshot(), pl = {}, now = Date.now();
     for (const P of host.players.values()) {
       if (P.table == null || now - P.lastSeen > 60000) continue;
-      pl[P.cid] = [P.table, P.taps, R.phase === 'done' ? R.top.findIndex(x => x.cid === P.cid) : -1];
+      pl[P.cid] = [P.table, P.taps, R.phase === 'done' ? R.top.findIndex(x => x.cid === P.cid) : -1, R.rid && P.inRace === R.rid ? 1 : 0];
     }
     snap.pl = pl; snap.top = null;
-    try { host.client.publish(host.base + '/s', JSON.stringify(snap), { qos: 0, retain: true }); } catch {}
+    publishAll(host.base + '/s', JSON.stringify(snap), true);
   }
 
   // ----- 電視畫面 -----
@@ -770,6 +821,8 @@ input,select{font:inherit;font-size:17px;width:100%;padding:13px;border-radius:1
     if (lanes.length !== s.tables.length) buildLanes(s.tables.length);
     const idle = s.phase === 'idle';
     $('lobby').hidden = !idle; $('board').hidden = idle; $('side').hidden = idle;
+    const running = s.phase === 'count' || s.phase === 'race';
+    $('sideJoin').hidden = running; $('sideLock').hidden = !running; // 比賽期間收起 QR Code，暫停加入
     $('tvWrap').classList.toggle('lobby-mode', idle);
     $('startBtn').classList.toggle('btn-start-big', idle);
     if (idle) { $('totalBig').textContent = s.total; renderLobby(s); }
@@ -842,8 +895,16 @@ input,select{font:inherit;font-size:17px;width:100%;padding:13px;border-radius:1
     if (!tableCounts().some(n => n > 0)) { $('hint').innerHTML = T.hintNoPlayers; return; }
     $('hint').innerHTML = T.hintIdle;
     if (R.phase === 'done') host.raceNo++;
-    host.race = freshRace(host.raceNo);
-    host.race.phase = 'count'; host.race.countdownEnd = Date.now() + COUNTDOWN_MS;
+    const N = freshRace(host.raceNo);
+    // 鎖定參賽名單：此刻在線而且已入枱的人；之後不准中途加入
+    N.rid = Date.now();
+    for (const P of host.players.values()) {
+      if (isOnline(P) && P.table != null) { P.inRace = N.rid; P.taps = 0; N.size[P.table]++; }
+      else P.inRace = 0;
+    }
+    N.entered = N.size.map(n => n > 0);
+    N.phase = 'count'; N.countdownEnd = Date.now() + COUNTDOWN_MS;
+    host.race = N;
     broadcastState();
   };
   $('stopBtn').onclick = () => { if (host.race.phase === 'race') { endRace(); broadcastState(); } };
