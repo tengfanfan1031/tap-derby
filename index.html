@@ -4,6 +4,9 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no,viewport-fit=cover">
 <meta name="theme-color" content="#0a1712">
+<!-- 內容安全政策：只准載入指定的程式庫、字型，只准連線到 3 個中轉站，其他一律封鎖 -->
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'self' 'unsafe-inline' https://unpkg.com/mqtt@5.10.1/ https://cdnjs.cloudflare.com/ajax/libs/qrcode-generator/1.4.4/; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src https://fonts.gstatic.com; img-src 'self' data:; worker-src blob:; connect-src wss://test.mosquitto.org:8081 wss://broker.emqx.io:8084 wss://broker.hivemq.com:8884; base-uri 'none'; form-action 'none'">
+<meta name="referrer" content="no-referrer">
 <title>搖搖賽馬 Tap Derby</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -226,8 +229,9 @@ input,select{font:inherit;font-size:17px;width:100%;padding:13px;border-radius:1
   </div>
 </div>
 
-<script src="https://unpkg.com/mqtt@5.10.1/dist/mqtt.min.js"></script>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/qrcode-generator/1.4.4/qrcode.min.js"></script>
+<!-- integrity：程式庫被改動過，瀏覽器會拒絕執行 -->
+<script src="https://unpkg.com/mqtt@5.10.1/dist/mqtt.min.js" integrity="sha384-u4uqeACkFcoKl57rBQJHVGDd1pqhW4w8X3WjTu1ZksPdxoLqdt34jpoNkJisE25W" crossorigin="anonymous"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/qrcode-generator/1.4.4/qrcode.min.js" integrity="sha384-mZT2gIty7ZDdOGkxfP6joZcYdMW1Jvj9dRlfpTmaJAKKXTqzygtB22k7FLe+KZC1" crossorigin="anonymous"></script>
 <script>
 (() => {
   // =====================================================================
@@ -237,7 +241,8 @@ input,select{font:inherit;font-size:17px;width:100%;padding:13px;border-radius:1
   const DEFAULT_TABLES = 5; // 預計 40–50 人，預設 5 張枱
   const COLORS = ['#e5484d','#f0c53c','#3d8df5','#c46cf0','#2fbf71','#ff8a3d','#4dd0e1','#f06292'];
   const RACE_SECONDS = 20, AVG_TAPS = 6.5, STEP = 100 / (AVG_TAPS * RACE_SECONDS);
-  const MAX_TAPS_PER_SEC = 16, COUNTDOWN_MS = 3000, RACE_TIMEOUT_MS = 90000, MAX_PLAYERS = 120;
+  // 每人每秒最多計 14 下：真人兩隻手指最快約 10–13 下，連點程式也不能無限加速
+  const MAX_TAPS_PER_SEC = 14, COUNTDOWN_MS = 3000, RACE_TIMEOUT_MS = 90000, MAX_PLAYERS = 120, MAX_PER_TABLE = 20;
 
   // =====================================================================
   //  文字：中英文各寫一份，再自動合併成「中文＋英文細字」
@@ -260,7 +265,7 @@ input,select{font:inherit;font-size:17px;width:100%;padding:13px;border-radius:1
     place:['冠軍','亞軍','季軍','第四','第五','第六','第七','第八'], finished:'完場',
     tableTime:t=>`你張枱用咗 ${t} 秒衝線`, tableDnf:'你張枱未到終點', youTapped:n=>`你一個人按咗 ${n} 下`,
     mvp:k=>`你係全場第 ${k} 快手指！`, winMsg:'恭喜！快啲同枱友擊掌！', nextMsg:'等主持人開下一場，再嚟過！',
-    errBusy:'比賽進行中，完場後先可以轉枱。', errFull:'房間已滿。', reconnect:'連線不穩，重新連線中…',
+    errBusy:'比賽進行中，完場後先可以轉枱。', errFull:'房間已滿。', errTableFull:'這張枱已滿 20 人，請確認枱號或通知主持人。', reconnect:'連線不穩，重新連線中…',
     raceName:n=>`第 ${n} 場 · 尾牙盃`, callLabel:'現場評述',
     phase:{idle:'等人入場',count:'準備',race:'比賽中',done:'完場'},
     start:'開始比賽', again:'再跑一場', stop:'提早完場', reset:'重設', fullscreen:'全螢幕',
@@ -298,7 +303,7 @@ input,select{font:inherit;font-size:17px;width:100%;padding:13px;border-radius:1
     place:['1st','2nd','3rd','4th','5th','6th','7th','8th'], finished:'Done',
     tableTime:t=>`Your table finished in ${t}s`, tableDnf:'Your table did not finish', youTapped:n=>`You tapped ${n} times`,
     mvp:k=>`You're #${k} fastest fingers in the room!`, winMsg:'Congratulations! High-five your table!', nextMsg:'Wait for the next race and try again!',
-    errBusy:'A race is running. You can change tables after it ends.', errFull:'This room is full.', reconnect:'Connection unstable. Reconnecting…',
+    errBusy:'A race is running. You can change tables after it ends.', errFull:'This room is full.', errTableFull:'This table already has 20 players. Check your table number or tell the host.', reconnect:'Connection unstable. Reconnecting…',
     raceName:n=>`Race ${n} · Year-End Cup`, callLabel:'Live call',
     phase:{idle:'Lobby',count:'Get ready',race:'Racing',done:'Finished'},
     start:'Start race', again:'Run again', stop:'End race now', reset:'Reset', fullscreen:'Full screen',
@@ -358,7 +363,8 @@ input,select{font:inherit;font-size:17px;width:100%;padding:13px;border-radius:1
     c.on('connect', () => h.connect && h.connect());
     c.on('offline', () => h.offline && h.offline());
     c.on('close', () => h.offline && h.offline());
-    c.on('message', (topic, buf) => { let m; try { m = JSON.parse(buf.toString()); } catch { return; } h.message && h.message(topic, m); });
+    // 過大的訊息直接丟棄（正常狀態約 3 KB、玩家訊息約 100 位元組）
+    c.on('message', (topic, buf) => { if (!buf || buf.length > 32768) return; let m; try { m = JSON.parse(buf.toString()); } catch { return; } h.message && h.message(topic, m); });
     c.on('error', () => {});
     return c;
   }
@@ -433,18 +439,41 @@ input,select{font:inherit;font-size:17px;width:100%;padding:13px;border-radius:1
         if (client !== c) return;
         if (topic.endsWith('/s')) onState(m);
         else if (m.t === 'err') {
-          if (m.code === 'locked') return; // 比賽進行中：保留揀好的枱，完場後自動入枱（畫面顯示「請等下一場」）
-          joinErrKey = m.code === 'busy' ? 'errBusy' : m.code === 'full' ? 'errFull' : ''; wantTable = null; view = ''; renderPhone();
+          if (!['busy', 'full', 'tableFull'].includes(m.code)) return; // 只接受已知的錯誤碼；locked（比賽進行中）不用處理：保留揀好的枱，完場後自動入枱
+          joinErrKey = m.code === 'busy' ? 'errBusy' : m.code === 'full' ? 'errFull' : m.code === 'tableFull' ? 'errTableFull' : ''; wantTable = null; view = ''; renderPhone();
         }
       },
     });
     client = c;
   }
 
-  function onState(m) {
-    if (!m || !Array.isArray(m.tables)) return;
-    const p = m.pl && m.pl[cid];
-    m.me = p ? { table: p[0], taps: p[1], mvp: p[2], inRace: !!p[3] } : null;
+  // 中轉站是公開的，收到的狀態一律當作不可信：只取需要的欄位，全部轉成範圍內的數字，
+  // 不合格就整個丟棄（防止有人送假訊息把程式碼塞進同事手機）
+  const num = (v, lo, hi, d) => { v = Number(v); return Number.isFinite(v) ? Math.min(hi, Math.max(lo, v)) : d; };
+  const int = (v, lo, hi, d) => { const x = num(v, lo, hi, d); return x === d ? d : Math.round(x); };
+  function cleanState(m) {
+    if (!m || typeof m !== 'object' || !Array.isArray(m.tables)) return null;
+    const n = m.tables.length;
+    if (n < 2 || n > 8 || !['idle', 'count', 'race', 'done'].includes(m.phase)) return null;
+    const tables = m.tables.map(t => {
+      t = (t && typeof t === 'object') ? t : {};
+      return { players: int(t.players, 0, 999, 0), prog: num(t.prog, 0, 100, 0), rate: num(t.rate, 0, 99, 0),
+        finish: t.finish == null ? null : num(t.finish, 0, 9999, null) };
+    });
+    const ranking = Array.isArray(m.ranking) ? m.ranking.slice(0, n).map(x => int(x, 0, n - 1, -1)).filter(x => x >= 0) : null;
+    const p = m.pl && typeof m.pl === 'object' && Object.prototype.hasOwnProperty.call(m.pl, cid) ? m.pl[cid] : null;
+    let me = null;
+    if (Array.isArray(p)) {
+      const table = int(p[0], 0, n - 1, -1);
+      if (table >= 0) me = { table, taps: int(p[1], 0, 99999, 0), mvp: int(p[2], -1, 4, -1), inRace: p[3] === 1 };
+    }
+    return { no: int(m.no, 1, 9999, 1), phase: m.phase, countdown: int(m.countdown, 0, 9, 0), elapsed: num(m.elapsed, 0, 9999, 0),
+      total: int(m.total, 0, 999, 0), tables, ranking, me };
+  }
+
+  function onState(raw) {
+    const m = cleanState(raw);
+    if (!m) return;
     state = m; lastStateAt = Date.now(); stateCount++;
     if (phoneErr === 'notFound' && stateCount >= 2) { phoneErr = ''; view = ''; }
     renderPhone();
@@ -667,8 +696,14 @@ input,select{font:inherit;font-size:17px;width:100%;padding:13px;border-radius:1
         if (P.inRace !== R.rid) { sendTo(pcid, { t: 'err', code: 'locked' }); return; }
         if (P.table !== table) { sendTo(pcid, { t: 'err', code: 'busy' }); return; }
       }
+      // 每枱人數上限：防止有人用假玩家灌爆某一枱（拉低該枱平均）
+      if (P.table !== table) {
+        let k = 0;
+        for (const Q of host.players.values()) if (Q !== P && Q.table === table && isOnline(Q)) k++;
+        if (k >= MAX_PER_TABLE) { sendTo(pcid, { t: 'err', code: 'tableFull' }); return; }
+      }
       P.table = table;
-      P.name = String(m.name || '').replace(/[\u0000-\u001f<>]/g, '').trim().slice(0, 12);
+      P.name = String(m.name || '').replace(/[\u0000-\u001f\u007f-\u009f<>&"'`]/g, '').trim().slice(0, 12);
       return;
     }
     if (m.t === 'tap') {
